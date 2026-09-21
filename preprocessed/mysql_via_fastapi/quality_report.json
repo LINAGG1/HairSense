@@ -1,0 +1,31 @@
+{
+  "device_id": "mock-device-01",
+  "session_id": "mock-session-001",
+  "user_id": "mock-user-001",
+  "is_synthetic": true,
+  "policy": "mock_strict_2s_no_imputation_v1",
+  "expected_count": 3000,
+  "input_count": 2990,
+  "unique_count": 2990,
+  "identical_duplicates_removed": 0,
+  "missing_timestamp_slots": 10,
+  "null_counts": {
+    "optical": 50,
+    "gyro_x": 0,
+    "gyro_y": 0,
+    "gyro_z": 0
+  },
+  "invalid_counts": {
+    "optical": 0,
+    "gyro_x": 0,
+    "gyro_y": 0,
+    "gyro_z": 0
+  },
+  "non_20ms_adjacent_intervals": 1,
+  "window_count": 30,
+  "usable_windows": 28,
+  "excluded_windows": 2,
+  "usable_rows": 2800,
+  "excluded_existing_rows": 190,
+  "source": "mysql_via_fastapi"
+}

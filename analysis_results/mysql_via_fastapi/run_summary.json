@@ -1,0 +1,19 @@
+{
+  "source": "mysql_via_fastapi",
+  "is_synthetic": true,
+  "feature_windows": 28,
+  "features_per_window": 16,
+  "baseline_windows": 10,
+  "evaluated_windows": 18,
+  "excluded_windows": 2,
+  "flagged_windows": 8,
+  "numpy_version": "2.5.3",
+  "sklearn_version": "1.9.1",
+  "model_settings": {
+    "n_estimators": 200,
+    "contamination": "auto",
+    "random_state": 42
+  },
+  "anomaly_score_definition": "-decision_function; greater than zero is flagged",
+  "limitation": "10 reference windows only; execution test, not performance validation"
+}
