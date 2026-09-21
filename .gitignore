@@ -29,3 +29,6 @@ Thumbs.db
 
 # IDE
 .vscode/
+
+db_config.example.json
+db_config.json
