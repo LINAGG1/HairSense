@@ -1,9 +1,10 @@
 {
-  "is_synthetic": true,
   "user_id": "mock-user-001",
   "device_id": "mock-device-01",
   "session_id": "mock-session-v1-001",
   "boot_id": "mock-boot-001",
+  "is_synthetic": true,
+  "sensor": "gyro",
   "reference_elapsed_seconds": [
     0,
     20
@@ -21,8 +22,6 @@
     9
   ],
   "feature_order": [
-    "optical_mean",
-    "optical_std",
     "gyro_x_mean",
     "gyro_x_std",
     "gyro_y_mean",
@@ -31,13 +30,7 @@
     "gyro_z_std",
     "gyro_rapid_change_count"
   ],
-  "std_ddof": 0,
-  "feature_definition_version": "mean_std_gyro_events_v1",
-  "gyro_rapid_change_threshold_dps2": 500.0,
-  "gyro_rapid_change_count_scope": "within_each_2s_window",
   "feature_mean": {
-    "optical_mean": 1.1997622000000001,
-    "optical_std": 0.01972223722951765,
     "gyro_x_mean": -0.012315000000000001,
     "gyro_x_std": 0.49392227982660664,
     "gyro_y_mean": -0.0080752,
@@ -47,8 +40,6 @@
     "gyro_rapid_change_count": 0.0
   },
   "feature_std": {
-    "optical_mean": 0.0013166012912038591,
-    "optical_std": 0.0016384415957329472,
     "gyro_x_mean": 0.03592765372522954,
     "gyro_x_std": 0.02931000449824639,
     "gyro_y_mean": 0.057069542992387805,
@@ -57,5 +48,13 @@
     "gyro_z_std": 0.029042850402734053,
     "gyro_rapid_change_count": 0.0
   },
+  "std_ddof": 0,
+  "constant_reference_features": [
+    "gyro_rapid_change_count"
+  ],
+  "constant_feature_note": "No reliable standardized change; exactly constant features cannot split trees. Inspect absolute delta.",
+  "feature_definition_version": "mean_std_gyro_events_v1",
+  "gyro_rapid_change_threshold_dps2": 500.0,
+  "gyro_rapid_change_count_scope": "within_each_2s_window",
   "note": "Synthetic demonstration only; not a validated personal baseline"
 }

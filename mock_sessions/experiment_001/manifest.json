@@ -1,0 +1,209 @@
+{
+  "dataset_version": "multi_session_demo_1",
+  "is_synthetic": true,
+  "seed": 20260923,
+  "sessions": [
+    {
+      "split": "train",
+      "session_id": "multi-session-001",
+      "boot_id": "multi-boot-001",
+      "directory": "train/multi-session-001",
+      "scenario": "normal",
+      "session_order": 1
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-002",
+      "boot_id": "multi-boot-002",
+      "directory": "train/multi-session-002",
+      "scenario": "normal",
+      "session_order": 2
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-003",
+      "boot_id": "multi-boot-003",
+      "directory": "train/multi-session-003",
+      "scenario": "normal",
+      "session_order": 3
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-004",
+      "boot_id": "multi-boot-004",
+      "directory": "train/multi-session-004",
+      "scenario": "normal",
+      "session_order": 4
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-005",
+      "boot_id": "multi-boot-005",
+      "directory": "train/multi-session-005",
+      "scenario": "normal",
+      "session_order": 5
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-006",
+      "boot_id": "multi-boot-006",
+      "directory": "train/multi-session-006",
+      "scenario": "normal",
+      "session_order": 6
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-007",
+      "boot_id": "multi-boot-007",
+      "directory": "train/multi-session-007",
+      "scenario": "normal",
+      "session_order": 7
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-008",
+      "boot_id": "multi-boot-008",
+      "directory": "train/multi-session-008",
+      "scenario": "normal",
+      "session_order": 8
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-009",
+      "boot_id": "multi-boot-009",
+      "directory": "train/multi-session-009",
+      "scenario": "normal",
+      "session_order": 9
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-010",
+      "boot_id": "multi-boot-010",
+      "directory": "train/multi-session-010",
+      "scenario": "normal",
+      "session_order": 10
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-011",
+      "boot_id": "multi-boot-011",
+      "directory": "train/multi-session-011",
+      "scenario": "normal",
+      "session_order": 11
+    },
+    {
+      "split": "train",
+      "session_id": "multi-session-012",
+      "boot_id": "multi-boot-012",
+      "directory": "train/multi-session-012",
+      "scenario": "normal",
+      "session_order": 12
+    },
+    {
+      "split": "calibration",
+      "session_id": "multi-session-013",
+      "boot_id": "multi-boot-013",
+      "directory": "calibration/multi-session-013",
+      "scenario": "normal",
+      "session_order": 13
+    },
+    {
+      "split": "calibration",
+      "session_id": "multi-session-014",
+      "boot_id": "multi-boot-014",
+      "directory": "calibration/multi-session-014",
+      "scenario": "normal",
+      "session_order": 14
+    },
+    {
+      "split": "calibration",
+      "session_id": "multi-session-015",
+      "boot_id": "multi-boot-015",
+      "directory": "calibration/multi-session-015",
+      "scenario": "normal",
+      "session_order": 15
+    },
+    {
+      "split": "calibration",
+      "session_id": "multi-session-016",
+      "boot_id": "multi-boot-016",
+      "directory": "calibration/multi-session-016",
+      "scenario": "normal",
+      "session_order": 16
+    },
+    {
+      "split": "calibration",
+      "session_id": "multi-session-017",
+      "boot_id": "multi-boot-017",
+      "directory": "calibration/multi-session-017",
+      "scenario": "normal",
+      "session_order": 17
+    },
+    {
+      "split": "calibration",
+      "session_id": "multi-session-018",
+      "boot_id": "multi-boot-018",
+      "directory": "calibration/multi-session-018",
+      "scenario": "normal",
+      "session_order": 18
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-019",
+      "boot_id": "multi-boot-019",
+      "directory": "test/multi-session-019",
+      "scenario": "normal",
+      "session_order": 19
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-020",
+      "boot_id": "multi-boot-020",
+      "directory": "test/multi-session-020",
+      "scenario": "optical_high",
+      "session_order": 20
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-021",
+      "boot_id": "multi-boot-021",
+      "directory": "test/multi-session-021",
+      "scenario": "optical_low",
+      "session_order": 21
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-022",
+      "boot_id": "multi-boot-022",
+      "directory": "test/multi-session-022",
+      "scenario": "optical_variability",
+      "session_order": 22
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-023",
+      "boot_id": "multi-boot-023",
+      "directory": "test/multi-session-023",
+      "scenario": "gyro_variability",
+      "session_order": 23
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-024",
+      "boot_id": "multi-boot-024",
+      "directory": "test/multi-session-024",
+      "scenario": "gyro_spikes",
+      "session_order": 24
+    }
+  ],
+  "session_counts": {
+    "train": 12,
+    "calibration": 6,
+    "test": 6
+  },
+  "total_readings": 72000,
+  "window_seconds": 2,
+  "split_policy": "Fixed disjoint sessions: train 1-12, calibration 13-18, test 19-24",
+  "usage": "Fit baseline/models only on train; choose thresholds on calibration; evaluate test last. Labels are not input features.",
+  "limitations": "One simulated user. No real-world accuracy claim. Tail percentiles from 180 calibration windows remain unstable."
+}

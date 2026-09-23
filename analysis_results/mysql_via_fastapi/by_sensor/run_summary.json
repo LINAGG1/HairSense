@@ -1,0 +1,33 @@
+{
+  "source": "mysql_via_fastapi",
+  "is_synthetic": true,
+  "feature_windows": 28,
+  "baseline_windows": 10,
+  "evaluated_windows": 18,
+  "excluded_windows": 2,
+  "anomaly_score_definition": "-decision_function; positive means flagged, not probability",
+  "limitation": "Synthetic 10-window baseline; thresholds uncalibrated. Shared quality exclusion remains.",
+  "sensors": {
+    "optical": {
+      "features_per_window": 2,
+      "flagged_windows": 9,
+      "constant_reference_features": []
+    },
+    "gyro": {
+      "features_per_window": 7,
+      "flagged_windows": 11,
+      "constant_reference_features": [
+        "gyro_rapid_change_count"
+      ]
+    }
+  },
+  "numpy_version": "2.5.3",
+  "sklearn_version": "1.9.1",
+  "model_settings": {
+    "n_estimators": 200,
+    "max_samples": "auto",
+    "contamination": "auto",
+    "random_state": 42,
+    "n_jobs": 1
+  }
+}

@@ -1,0 +1,52 @@
+{
+  "version": "sensor_rules_1",
+  "is_synthetic": true,
+  "rules": {
+    "optical": {
+      "feature": "optical_mean",
+      "baseline_mean": 1.1949016638888896,
+      "transform": "absolute_difference_from_training_mean",
+      "threshold": 0.014613336111110264,
+      "unit": "V",
+      "quantile": 0.95,
+      "quantile_method": "higher",
+      "comparison": "strictly_greater_than",
+      "combine": "model_flag OR rule_flag",
+      "calibration_windows": 180,
+      "calibration_session_ids": [
+        "multi-session-013",
+        "multi-session-014",
+        "multi-session-015",
+        "multi-session-016",
+        "multi-session-017",
+        "multi-session-018"
+      ]
+    },
+    "gyro": {
+      "feature": "gyro_rapid_change_count",
+      "baseline_mean": 0.0,
+      "transform": "raw_count",
+      "threshold": 0.0,
+      "unit": "events_per_2s_window",
+      "quantile": 0.95,
+      "quantile_method": "higher",
+      "comparison": "strictly_greater_than",
+      "combine": "model_flag OR rule_flag",
+      "calibration_windows": 180,
+      "calibration_session_ids": [
+        "multi-session-013",
+        "multi-session-014",
+        "multi-session-015",
+        "multi-session-016",
+        "multi-session-017",
+        "multi-session-018"
+      ]
+    }
+  },
+  "original_model_sha256": {
+    "optical": "f46d116241007deb6193938fd40a5aa25388e77f0174af8882e08db5a5b829fb",
+    "gyro": "ea5371a247782eaa56e2561be8bd4e274ea8ff0561710015f6ad3468ffd44673"
+  },
+  "holdout_seed_fixed_before_evaluation": 20261001,
+  "note": "OR combination can increase false positives; 95th percentile per rule does not guarantee a 5% combined error rate"
+}

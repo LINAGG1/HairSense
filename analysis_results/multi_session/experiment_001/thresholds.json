@@ -1,0 +1,38 @@
+{
+  "optical": {
+    "anomaly_score_definition": "-decision_function",
+    "threshold": 0.10594972098035704,
+    "comparison": "strictly_greater_than",
+    "quantile": 0.95,
+    "quantile_method": "higher",
+    "calibration_windows": 180,
+    "calibration_session_ids": [
+      "multi-session-013",
+      "multi-session-014",
+      "multi-session-015",
+      "multi-session-016",
+      "multi-session-017",
+      "multi-session-018"
+    ],
+    "calibration_flagged_windows": 8,
+    "note": "Empirical window threshold; not a probability or guaranteed future error rate"
+  },
+  "gyro": {
+    "anomaly_score_definition": "-decision_function",
+    "threshold": 0.10518577329758438,
+    "comparison": "strictly_greater_than",
+    "quantile": 0.95,
+    "quantile_method": "higher",
+    "calibration_windows": 180,
+    "calibration_session_ids": [
+      "multi-session-013",
+      "multi-session-014",
+      "multi-session-015",
+      "multi-session-016",
+      "multi-session-017",
+      "multi-session-018"
+    ],
+    "calibration_flagged_windows": 8,
+    "note": "Empirical window threshold; not a probability or guaranteed future error rate"
+  }
+}

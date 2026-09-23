@@ -1,0 +1,66 @@
+{
+  "is_synthetic": true,
+  "holdout_sessions": 6,
+  "holdout_windows": 180,
+  "calibration_windows": 180,
+  "rule_policy_sha256": "65695a35b6e2d9c8bcc527734217014a29099904b710d234056c8dec8d2a8e0c",
+  "comparison": {
+    "optical": {
+      "model_only": {
+        "windows": 180,
+        "true_positive": 12,
+        "false_positive": 7,
+        "false_negative": 3,
+        "true_negative": 158,
+        "precision": 0.631578947368421,
+        "recall": 0.8,
+        "false_positive_rate": 0.04242424242424243,
+        "false_negative_rate": 0.2
+      },
+      "model_or_rule": {
+        "windows": 180,
+        "true_positive": 15,
+        "false_positive": 9,
+        "false_negative": 0,
+        "true_negative": 156,
+        "precision": 0.625,
+        "recall": 1.0,
+        "false_positive_rate": 0.05454545454545454,
+        "false_negative_rate": 0.0
+      },
+      "calibration_combined_flagged": 14
+    },
+    "gyro": {
+      "model_only": {
+        "windows": 180,
+        "true_positive": 10,
+        "false_positive": 3,
+        "false_negative": 0,
+        "true_negative": 167,
+        "precision": 0.7692307692307693,
+        "recall": 1.0,
+        "false_positive_rate": 0.01764705882352941,
+        "false_negative_rate": 0.0
+      },
+      "model_or_rule": {
+        "windows": 180,
+        "true_positive": 10,
+        "false_positive": 3,
+        "false_negative": 0,
+        "true_negative": 167,
+        "precision": 0.7692307692307693,
+        "recall": 1.0,
+        "false_positive_rate": 0.01764705882352941,
+        "false_negative_rate": 0.0
+      },
+      "calibration_combined_flagged": 8
+    }
+  },
+  "limitations": [
+    "One simulated user, same simulator and anomaly scenarios",
+    "No proof of real sensor accuracy or clinical meaning",
+    "New holdout is consumed once inspected; do not tune and call it independent again",
+    "OR rules may increase false positives; calibration windows are correlated",
+    "Rapid-event counts apply within each 2-second window only"
+  ]
+}

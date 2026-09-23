@@ -1,0 +1,43 @@
+{
+  "user_id": "mock-user-001",
+  "device_id": "mock-device-01",
+  "session_id": "mock-session-v1-001",
+  "boot_id": "mock-boot-001",
+  "is_synthetic": true,
+  "sensor": "optical",
+  "reference_elapsed_seconds": [
+    0,
+    20
+  ],
+  "reference_window_ids": [
+    0,
+    1,
+    2,
+    3,
+    4,
+    5,
+    6,
+    7,
+    8,
+    9
+  ],
+  "feature_order": [
+    "optical_mean",
+    "optical_std"
+  ],
+  "feature_mean": {
+    "optical_mean": 1.1997622000000001,
+    "optical_std": 0.01972223722951765
+  },
+  "feature_std": {
+    "optical_mean": 0.0013166012912038591,
+    "optical_std": 0.0016384415957329472
+  },
+  "std_ddof": 0,
+  "constant_reference_features": [],
+  "constant_feature_note": "No reliable standardized change; exactly constant features cannot split trees. Inspect absolute delta.",
+  "feature_definition_version": "mean_std_gyro_events_v1",
+  "gyro_rapid_change_threshold_dps2": 500.0,
+  "gyro_rapid_change_count_scope": "within_each_2s_window",
+  "note": "Synthetic demonstration only; not a validated personal baseline"
+}

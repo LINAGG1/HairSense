@@ -1,0 +1,81 @@
+{
+  "is_synthetic": true,
+  "dataset_version": "multi_session_demo_1",
+  "manifest_sha256": "4d049e42faa1e23f34181a42983159c8a4f25b2416257c139f171d22e1afa80a",
+  "train_windows": 360,
+  "calibration_windows": 180,
+  "test_windows": 180,
+  "calibration_quantile": 0.95,
+  "test_metrics": {
+    "optical": {
+      "windows": 180,
+      "true_positive": 10,
+      "false_positive": 5,
+      "false_negative": 5,
+      "true_negative": 160,
+      "precision": 0.6666666666666666,
+      "recall": 0.6666666666666666,
+      "false_positive_rate": 0.030303030303030304,
+      "false_negative_rate": 0.3333333333333333
+    },
+    "gyro": {
+      "windows": 180,
+      "true_positive": 5,
+      "false_positive": 1,
+      "false_negative": 5,
+      "true_negative": 169,
+      "precision": 0.8333333333333334,
+      "recall": 0.5,
+      "false_positive_rate": 0.0058823529411764705,
+      "false_negative_rate": 0.5
+    }
+  },
+  "split_session_ids": {
+    "train": [
+      "multi-session-001",
+      "multi-session-002",
+      "multi-session-003",
+      "multi-session-004",
+      "multi-session-005",
+      "multi-session-006",
+      "multi-session-007",
+      "multi-session-008",
+      "multi-session-009",
+      "multi-session-010",
+      "multi-session-011",
+      "multi-session-012"
+    ],
+    "calibration": [
+      "multi-session-013",
+      "multi-session-014",
+      "multi-session-015",
+      "multi-session-016",
+      "multi-session-017",
+      "multi-session-018"
+    ],
+    "test": [
+      "multi-session-019",
+      "multi-session-020",
+      "multi-session-021",
+      "multi-session-022",
+      "multi-session-023",
+      "multi-session-024"
+    ]
+  },
+  "numpy_version": "2.5.3",
+  "sklearn_version": "1.9.1",
+  "model_settings": {
+    "n_estimators": 200,
+    "max_samples": "auto",
+    "contamination": "auto",
+    "random_state": 42,
+    "n_jobs": 1
+  },
+  "limitations": [
+    "One simulated user only; this is not evidence of real-world accuracy",
+    "Adjacent windows are correlated; calibration contains only 6 independent sessions",
+    "Sensor-specific quality handling and real timestamp jitter are not implemented here",
+    "Constant rapid-count features cannot split trees; inspect their absolute delta separately",
+    "The test set must not be used to choose thresholds; use a new holdout after tuning"
+  ]
+}

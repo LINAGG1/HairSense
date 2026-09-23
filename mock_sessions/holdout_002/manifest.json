@@ -1,0 +1,57 @@
+{
+  "dataset_version": "rules_holdout_002",
+  "is_synthetic": true,
+  "seed": 20261001,
+  "sessions": [
+    {
+      "split": "test",
+      "session_id": "multi-session-101",
+      "boot_id": "multi-boot-101",
+      "directory": "test/multi-session-101",
+      "scenario": "normal",
+      "session_order": 101
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-102",
+      "boot_id": "multi-boot-102",
+      "directory": "test/multi-session-102",
+      "scenario": "optical_high",
+      "session_order": 102
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-103",
+      "boot_id": "multi-boot-103",
+      "directory": "test/multi-session-103",
+      "scenario": "optical_low",
+      "session_order": 103
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-104",
+      "boot_id": "multi-boot-104",
+      "directory": "test/multi-session-104",
+      "scenario": "optical_variability",
+      "session_order": 104
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-105",
+      "boot_id": "multi-boot-105",
+      "directory": "test/multi-session-105",
+      "scenario": "gyro_variability",
+      "session_order": 105
+    },
+    {
+      "split": "test",
+      "session_id": "multi-session-106",
+      "boot_id": "multi-boot-106",
+      "directory": "test/multi-session-106",
+      "scenario": "gyro_spikes",
+      "session_order": 106
+    }
+  ],
+  "total_readings": 18000,
+  "note": "New random realizations of the same synthetic scenarios; not new real-world conditions"
+}

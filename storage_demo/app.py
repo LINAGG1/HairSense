@@ -39,7 +39,7 @@ UInt64 = Annotated[
 class Reading(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
-    schema_version: Annotated[int, Field(strict=True, ge=1, le=1)]
+    schema_version: Literal[1]
     boot_id: Identifier
     seq: UInt64
     timestamp_ms: UInt64

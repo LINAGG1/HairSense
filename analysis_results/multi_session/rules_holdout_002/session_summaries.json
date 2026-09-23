@@ -1,0 +1,939 @@
+{
+  "summary_version": "session_summary_demo_1",
+  "is_synthetic": true,
+  "rule_policy_sha256": "65695a35b6e2d9c8bcc527734217014a29099904b710d234056c8dec8d2a8e0c",
+  "sessions": [
+    {
+      "session_id": "multi-session-101",
+      "boot_id": "multi-boot-101",
+      "user_id": "mock-multi-user-001",
+      "device_id": "mock-multi-device-001",
+      "is_synthetic": true,
+      "sensors": {
+        "optical": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 3,
+          "flagged_duration_s": 6,
+          "flagged_duration_fraction": 0.1,
+          "flagged_duration_percent": 10.0,
+          "longest_flagged_run_s": 2.0,
+          "flagged_intervals": [
+            {
+              "boot_id": "multi-boot-101",
+              "start_s": 0.0,
+              "end_s": 2.0,
+              "duration_s": 2.0
+            },
+            {
+              "boot_id": "multi-boot-101",
+              "start_s": 30.0,
+              "end_s": 32.0,
+              "duration_s": 2.0
+            },
+            {
+              "boot_id": "multi-boot-101",
+              "start_s": 58.0,
+              "end_s": 60.0,
+              "duration_s": 2.0
+            }
+          ],
+          "model_flagged_windows": 3,
+          "rule_flagged_windows": 0,
+          "rule_reason_windows": {},
+          "window_feature_aggregates": {
+            "optical_mean": {
+              "mean_of_window_values": 1.2021903999999999,
+              "baseline_mean_of_window_values": 1.1949016638888896,
+              "delta": 0.00728873611111025
+            },
+            "optical_std": {
+              "mean_of_window_values": 0.020539984840263075,
+              "baseline_mean_of_window_values": 0.020710365782957752,
+              "delta": -0.00017038094269467702
+            }
+          },
+          "model_threshold": 0.10594972098035704,
+          "additional_rule": {
+            "feature": "optical_mean",
+            "baseline_mean": 1.1949016638888896,
+            "transform": "absolute_difference_from_training_mean",
+            "threshold": 0.014613336111110264,
+            "unit": "V",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          }
+        },
+        "gyro": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 0,
+          "flagged_duration_s": 0,
+          "flagged_duration_fraction": 0.0,
+          "flagged_duration_percent": 0.0,
+          "longest_flagged_run_s": 0.0,
+          "flagged_intervals": [],
+          "model_flagged_windows": 0,
+          "rule_flagged_windows": 0,
+          "rule_reason_windows": {},
+          "window_feature_aggregates": {
+            "gyro_x_mean": {
+              "mean_of_window_values": -0.01536346666666664,
+              "baseline_mean_of_window_values": -0.004377380555555542,
+              "delta": -0.010986086111111099
+            },
+            "gyro_x_std": {
+              "mean_of_window_values": 12.433166285287635,
+              "baseline_mean_of_window_values": 12.759894691724453,
+              "delta": -0.32672840643681766
+            },
+            "gyro_y_mean": {
+              "mean_of_window_values": 0.018259133333333323,
+              "baseline_mean_of_window_values": -0.008078950000000012,
+              "delta": 0.026338083333333335
+            },
+            "gyro_y_std": {
+              "mean_of_window_values": 8.288292953674391,
+              "baseline_mean_of_window_values": 8.516102005692716,
+              "delta": -0.22780905201832446
+            },
+            "gyro_z_mean": {
+              "mean_of_window_values": -0.0011005333333333344,
+              "baseline_mean_of_window_values": -0.006315838888888901,
+              "delta": 0.005215305555555567
+            },
+            "gyro_z_std": {
+              "mean_of_window_values": 6.223780458571793,
+              "baseline_mean_of_window_values": 6.391080387455202,
+              "delta": -0.16729992888340917
+            },
+            "gyro_rapid_change_count": {
+              "mean_of_window_values": 0.0,
+              "baseline_mean_of_window_values": 0.0,
+              "delta": 0.0
+            }
+          },
+          "model_threshold": 0.10518577329758438,
+          "additional_rule": {
+            "feature": "gyro_rapid_change_count",
+            "baseline_mean": 0.0,
+            "transform": "raw_count",
+            "threshold": 0.0,
+            "unit": "events_per_2s_window",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          },
+          "within_window_rapid_event_count_sum": 0,
+          "rapid_event_count_note": "Sum of within-window counts; a boundary-spanning event may be counted twice"
+        }
+      }
+    },
+    {
+      "session_id": "multi-session-102",
+      "boot_id": "multi-boot-102",
+      "user_id": "mock-multi-user-001",
+      "device_id": "mock-multi-device-001",
+      "is_synthetic": true,
+      "sensors": {
+        "optical": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 6,
+          "flagged_duration_s": 12,
+          "flagged_duration_fraction": 0.2,
+          "flagged_duration_percent": 20.0,
+          "longest_flagged_run_s": 10.0,
+          "flagged_intervals": [
+            {
+              "boot_id": "multi-boot-102",
+              "start_s": 14.0,
+              "end_s": 16.0,
+              "duration_s": 2.0
+            },
+            {
+              "boot_id": "multi-boot-102",
+              "start_s": 30.0,
+              "end_s": 40.0,
+              "duration_s": 10.0
+            }
+          ],
+          "model_flagged_windows": 6,
+          "rule_flagged_windows": 5,
+          "rule_reason_windows": {
+            "optical_mean_increased": 5
+          },
+          "window_feature_aggregates": {
+            "optical_mean": {
+              "mean_of_window_values": 1.2377998333333333,
+              "baseline_mean_of_window_values": 1.1949016638888896,
+              "delta": 0.04289816944444369
+            },
+            "optical_std": {
+              "mean_of_window_values": 0.02052569279857289,
+              "baseline_mean_of_window_values": 0.020710365782957752,
+              "delta": -0.00018467298438486213
+            }
+          },
+          "model_threshold": 0.10594972098035704,
+          "additional_rule": {
+            "feature": "optical_mean",
+            "baseline_mean": 1.1949016638888896,
+            "transform": "absolute_difference_from_training_mean",
+            "threshold": 0.014613336111110264,
+            "unit": "V",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          }
+        },
+        "gyro": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 3,
+          "flagged_duration_s": 6,
+          "flagged_duration_fraction": 0.1,
+          "flagged_duration_percent": 10.0,
+          "longest_flagged_run_s": 2.0,
+          "flagged_intervals": [
+            {
+              "boot_id": "multi-boot-102",
+              "start_s": 20.0,
+              "end_s": 22.0,
+              "duration_s": 2.0
+            },
+            {
+              "boot_id": "multi-boot-102",
+              "start_s": 30.0,
+              "end_s": 32.0,
+              "duration_s": 2.0
+            },
+            {
+              "boot_id": "multi-boot-102",
+              "start_s": 50.0,
+              "end_s": 52.0,
+              "duration_s": 2.0
+            }
+          ],
+          "model_flagged_windows": 3,
+          "rule_flagged_windows": 0,
+          "rule_reason_windows": {},
+          "window_feature_aggregates": {
+            "gyro_x_mean": {
+              "mean_of_window_values": 0.028695599999999988,
+              "baseline_mean_of_window_values": -0.004377380555555542,
+              "delta": 0.03307298055555553
+            },
+            "gyro_x_std": {
+              "mean_of_window_values": 11.739695947598928,
+              "baseline_mean_of_window_values": 12.759894691724453,
+              "delta": -1.0201987441255245
+            },
+            "gyro_y_mean": {
+              "mean_of_window_values": 0.004396766666666662,
+              "baseline_mean_of_window_values": -0.008078950000000012,
+              "delta": 0.012475716666666675
+            },
+            "gyro_y_std": {
+              "mean_of_window_values": 7.847376097581784,
+              "baseline_mean_of_window_values": 8.516102005692716,
+              "delta": -0.6687259081109316
+            },
+            "gyro_z_mean": {
+              "mean_of_window_values": 0.01761426666666666,
+              "baseline_mean_of_window_values": -0.006315838888888901,
+              "delta": 0.02393010555555556
+            },
+            "gyro_z_std": {
+              "mean_of_window_values": 5.896259214588809,
+              "baseline_mean_of_window_values": 6.391080387455202,
+              "delta": -0.49482117286639316
+            },
+            "gyro_rapid_change_count": {
+              "mean_of_window_values": 0.0,
+              "baseline_mean_of_window_values": 0.0,
+              "delta": 0.0
+            }
+          },
+          "model_threshold": 0.10518577329758438,
+          "additional_rule": {
+            "feature": "gyro_rapid_change_count",
+            "baseline_mean": 0.0,
+            "transform": "raw_count",
+            "threshold": 0.0,
+            "unit": "events_per_2s_window",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          },
+          "within_window_rapid_event_count_sum": 0,
+          "rapid_event_count_note": "Sum of within-window counts; a boundary-spanning event may be counted twice"
+        }
+      }
+    },
+    {
+      "session_id": "multi-session-103",
+      "boot_id": "multi-boot-103",
+      "user_id": "mock-multi-user-001",
+      "device_id": "mock-multi-device-001",
+      "is_synthetic": true,
+      "sensors": {
+        "optical": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 7,
+          "flagged_duration_s": 14,
+          "flagged_duration_fraction": 0.23333333333333334,
+          "flagged_duration_percent": 23.33,
+          "longest_flagged_run_s": 10.0,
+          "flagged_intervals": [
+            {
+              "boot_id": "multi-boot-103",
+              "start_s": 4.0,
+              "end_s": 6.0,
+              "duration_s": 2.0
+            },
+            {
+              "boot_id": "multi-boot-103",
+              "start_s": 24.0,
+              "end_s": 26.0,
+              "duration_s": 2.0
+            },
+            {
+              "boot_id": "multi-boot-103",
+              "start_s": 30.0,
+              "end_s": 40.0,
+              "duration_s": 10.0
+            }
+          ],
+          "model_flagged_windows": 2,
+          "rule_flagged_windows": 7,
+          "rule_reason_windows": {
+            "optical_mean_increased": 2,
+            "optical_mean_decreased": 5
+          },
+          "window_feature_aggregates": {
+            "optical_mean": {
+              "mean_of_window_values": 1.1568685666666667,
+              "baseline_mean_of_window_values": 1.1949016638888896,
+              "delta": -0.03803309722222292
+            },
+            "optical_std": {
+              "mean_of_window_values": 0.0211491625088634,
+              "baseline_mean_of_window_values": 0.020710365782957752,
+              "delta": 0.00043879672590564633
+            }
+          },
+          "model_threshold": 0.10594972098035704,
+          "additional_rule": {
+            "feature": "optical_mean",
+            "baseline_mean": 1.1949016638888896,
+            "transform": "absolute_difference_from_training_mean",
+            "threshold": 0.014613336111110264,
+            "unit": "V",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          }
+        },
+        "gyro": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 0,
+          "flagged_duration_s": 0,
+          "flagged_duration_fraction": 0.0,
+          "flagged_duration_percent": 0.0,
+          "longest_flagged_run_s": 0.0,
+          "flagged_intervals": [],
+          "model_flagged_windows": 0,
+          "rule_flagged_windows": 0,
+          "rule_reason_windows": {},
+          "window_feature_aggregates": {
+            "gyro_x_mean": {
+              "mean_of_window_values": -0.014050733333333397,
+              "baseline_mean_of_window_values": -0.004377380555555542,
+              "delta": -0.009673352777777856
+            },
+            "gyro_x_std": {
+              "mean_of_window_values": 12.216161417806113,
+              "baseline_mean_of_window_values": 12.759894691724453,
+              "delta": -0.54373327391834
+            },
+            "gyro_y_mean": {
+              "mean_of_window_values": -0.0018214666666666731,
+              "baseline_mean_of_window_values": -0.008078950000000012,
+              "delta": 0.006257483333333339
+            },
+            "gyro_y_std": {
+              "mean_of_window_values": 8.149659320090466,
+              "baseline_mean_of_window_values": 8.516102005692716,
+              "delta": -0.3664426856022498
+            },
+            "gyro_z_mean": {
+              "mean_of_window_values": 0.004526066666666699,
+              "baseline_mean_of_window_values": -0.006315838888888901,
+              "delta": 0.0108419055555556
+            },
+            "gyro_z_std": {
+              "mean_of_window_values": 6.139662396349626,
+              "baseline_mean_of_window_values": 6.391080387455202,
+              "delta": -0.2514179911055754
+            },
+            "gyro_rapid_change_count": {
+              "mean_of_window_values": 0.0,
+              "baseline_mean_of_window_values": 0.0,
+              "delta": 0.0
+            }
+          },
+          "model_threshold": 0.10518577329758438,
+          "additional_rule": {
+            "feature": "gyro_rapid_change_count",
+            "baseline_mean": 0.0,
+            "transform": "raw_count",
+            "threshold": 0.0,
+            "unit": "events_per_2s_window",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          },
+          "within_window_rapid_event_count_sum": 0,
+          "rapid_event_count_note": "Sum of within-window counts; a boundary-spanning event may be counted twice"
+        }
+      }
+    },
+    {
+      "session_id": "multi-session-104",
+      "boot_id": "multi-boot-104",
+      "user_id": "mock-multi-user-001",
+      "device_id": "mock-multi-device-001",
+      "is_synthetic": true,
+      "sensors": {
+        "optical": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 5,
+          "flagged_duration_s": 10,
+          "flagged_duration_fraction": 0.16666666666666666,
+          "flagged_duration_percent": 16.67,
+          "longest_flagged_run_s": 10.0,
+          "flagged_intervals": [
+            {
+              "boot_id": "multi-boot-104",
+              "start_s": 30.0,
+              "end_s": 40.0,
+              "duration_s": 10.0
+            }
+          ],
+          "model_flagged_windows": 5,
+          "rule_flagged_windows": 1,
+          "rule_reason_windows": {
+            "optical_mean_decreased": 1
+          },
+          "window_feature_aggregates": {
+            "optical_mean": {
+              "mean_of_window_values": 1.1891434333333335,
+              "baseline_mean_of_window_values": 1.1949016638888896,
+              "delta": -0.005758230555556132
+            },
+            "optical_std": {
+              "mean_of_window_values": 0.037216970981897794,
+              "baseline_mean_of_window_values": 0.020710365782957752,
+              "delta": 0.016506605198940042
+            }
+          },
+          "model_threshold": 0.10594972098035704,
+          "additional_rule": {
+            "feature": "optical_mean",
+            "baseline_mean": 1.1949016638888896,
+            "transform": "absolute_difference_from_training_mean",
+            "threshold": 0.014613336111110264,
+            "unit": "V",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          }
+        },
+        "gyro": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 0,
+          "flagged_duration_s": 0,
+          "flagged_duration_fraction": 0.0,
+          "flagged_duration_percent": 0.0,
+          "longest_flagged_run_s": 0.0,
+          "flagged_intervals": [],
+          "model_flagged_windows": 0,
+          "rule_flagged_windows": 0,
+          "rule_reason_windows": {},
+          "window_feature_aggregates": {
+            "gyro_x_mean": {
+              "mean_of_window_values": -0.00694136666666666,
+              "baseline_mean_of_window_values": -0.004377380555555542,
+              "delta": -0.0025639861111111184
+            },
+            "gyro_x_std": {
+              "mean_of_window_values": 11.8076990653883,
+              "baseline_mean_of_window_values": 12.759894691724453,
+              "delta": -0.9521956263361524
+            },
+            "gyro_y_mean": {
+              "mean_of_window_values": 0.014279033333333304,
+              "baseline_mean_of_window_values": -0.008078950000000012,
+              "delta": 0.022357983333333317
+            },
+            "gyro_y_std": {
+              "mean_of_window_values": 7.883726040032101,
+              "baseline_mean_of_window_values": 8.516102005692716,
+              "delta": -0.6323759656606143
+            },
+            "gyro_z_mean": {
+              "mean_of_window_values": -0.004429200000000021,
+              "baseline_mean_of_window_values": -0.006315838888888901,
+              "delta": 0.0018866388888888795
+            },
+            "gyro_z_std": {
+              "mean_of_window_values": 5.925053520695452,
+              "baseline_mean_of_window_values": 6.391080387455202,
+              "delta": -0.4660268667597496
+            },
+            "gyro_rapid_change_count": {
+              "mean_of_window_values": 0.0,
+              "baseline_mean_of_window_values": 0.0,
+              "delta": 0.0
+            }
+          },
+          "model_threshold": 0.10518577329758438,
+          "additional_rule": {
+            "feature": "gyro_rapid_change_count",
+            "baseline_mean": 0.0,
+            "transform": "raw_count",
+            "threshold": 0.0,
+            "unit": "events_per_2s_window",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          },
+          "within_window_rapid_event_count_sum": 0,
+          "rapid_event_count_note": "Sum of within-window counts; a boundary-spanning event may be counted twice"
+        }
+      }
+    },
+    {
+      "session_id": "multi-session-105",
+      "boot_id": "multi-boot-105",
+      "user_id": "mock-multi-user-001",
+      "device_id": "mock-multi-device-001",
+      "is_synthetic": true,
+      "sensors": {
+        "optical": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 3,
+          "flagged_duration_s": 6,
+          "flagged_duration_fraction": 0.1,
+          "flagged_duration_percent": 10.0,
+          "longest_flagged_run_s": 2.0,
+          "flagged_intervals": [
+            {
+              "boot_id": "multi-boot-105",
+              "start_s": 10.0,
+              "end_s": 12.0,
+              "duration_s": 2.0
+            },
+            {
+              "boot_id": "multi-boot-105",
+              "start_s": 18.0,
+              "end_s": 20.0,
+              "duration_s": 2.0
+            },
+            {
+              "boot_id": "multi-boot-105",
+              "start_s": 44.0,
+              "end_s": 46.0,
+              "duration_s": 2.0
+            }
+          ],
+          "model_flagged_windows": 3,
+          "rule_flagged_windows": 0,
+          "rule_reason_windows": {},
+          "window_feature_aggregates": {
+            "optical_mean": {
+              "mean_of_window_values": 1.2046154999999998,
+              "baseline_mean_of_window_values": 1.1949016638888896,
+              "delta": 0.009713836111110208
+            },
+            "optical_std": {
+              "mean_of_window_values": 0.02079501849011996,
+              "baseline_mean_of_window_values": 0.020710365782957752,
+              "delta": 8.46527071622083e-05
+            }
+          },
+          "model_threshold": 0.10594972098035704,
+          "additional_rule": {
+            "feature": "optical_mean",
+            "baseline_mean": 1.1949016638888896,
+            "transform": "absolute_difference_from_training_mean",
+            "threshold": 0.014613336111110264,
+            "unit": "V",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          }
+        },
+        "gyro": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 5,
+          "flagged_duration_s": 10,
+          "flagged_duration_fraction": 0.16666666666666666,
+          "flagged_duration_percent": 16.67,
+          "longest_flagged_run_s": 10.0,
+          "flagged_intervals": [
+            {
+              "boot_id": "multi-boot-105",
+              "start_s": 30.0,
+              "end_s": 40.0,
+              "duration_s": 10.0
+            }
+          ],
+          "model_flagged_windows": 5,
+          "rule_flagged_windows": 5,
+          "rule_reason_windows": {
+            "gyro_rapid_changes_increased": 5
+          },
+          "window_feature_aggregates": {
+            "gyro_x_mean": {
+              "mean_of_window_values": 0.13550189999999998,
+              "baseline_mean_of_window_values": -0.004377380555555542,
+              "delta": 0.1398792805555555
+            },
+            "gyro_x_std": {
+              "mean_of_window_values": 13.790384929248212,
+              "baseline_mean_of_window_values": 12.759894691724453,
+              "delta": 1.0304902375237592
+            },
+            "gyro_y_mean": {
+              "mean_of_window_values": -0.1181733666666667,
+              "baseline_mean_of_window_values": -0.008078950000000012,
+              "delta": -0.11009441666666668
+            },
+            "gyro_y_std": {
+              "mean_of_window_values": 9.36578856152577,
+              "baseline_mean_of_window_values": 8.516102005692716,
+              "delta": 0.8496865558330544
+            },
+            "gyro_z_mean": {
+              "mean_of_window_values": 0.09592686666666671,
+              "baseline_mean_of_window_values": -0.006315838888888901,
+              "delta": 0.1022427055555556
+            },
+            "gyro_z_std": {
+              "mean_of_window_values": 6.890901886407753,
+              "baseline_mean_of_window_values": 6.391080387455202,
+              "delta": 0.4998214989525511
+            },
+            "gyro_rapid_change_count": {
+              "mean_of_window_values": 0.5,
+              "baseline_mean_of_window_values": 0.0,
+              "delta": 0.5
+            }
+          },
+          "model_threshold": 0.10518577329758438,
+          "additional_rule": {
+            "feature": "gyro_rapid_change_count",
+            "baseline_mean": 0.0,
+            "transform": "raw_count",
+            "threshold": 0.0,
+            "unit": "events_per_2s_window",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          },
+          "within_window_rapid_event_count_sum": 15,
+          "rapid_event_count_note": "Sum of within-window counts; a boundary-spanning event may be counted twice"
+        }
+      }
+    },
+    {
+      "session_id": "multi-session-106",
+      "boot_id": "multi-boot-106",
+      "user_id": "mock-multi-user-001",
+      "device_id": "mock-multi-device-001",
+      "is_synthetic": true,
+      "sensors": {
+        "optical": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 0,
+          "flagged_duration_s": 0,
+          "flagged_duration_fraction": 0.0,
+          "flagged_duration_percent": 0.0,
+          "longest_flagged_run_s": 0.0,
+          "flagged_intervals": [],
+          "model_flagged_windows": 0,
+          "rule_flagged_windows": 0,
+          "rule_reason_windows": {},
+          "window_feature_aggregates": {
+            "optical_mean": {
+              "mean_of_window_values": 1.2018056666666665,
+              "baseline_mean_of_window_values": 1.1949016638888896,
+              "delta": 0.006904002777776919
+            },
+            "optical_std": {
+              "mean_of_window_values": 0.02059312930032119,
+              "baseline_mean_of_window_values": 0.020710365782957752,
+              "delta": -0.00011723648263656239
+            }
+          },
+          "model_threshold": 0.10594972098035704,
+          "additional_rule": {
+            "feature": "optical_mean",
+            "baseline_mean": 1.1949016638888896,
+            "transform": "absolute_difference_from_training_mean",
+            "threshold": 0.014613336111110264,
+            "unit": "V",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          }
+        },
+        "gyro": {
+          "status": "summary_only",
+          "session_verdict": null,
+          "expected_windows": 30,
+          "valid_windows": 30,
+          "valid_duration_s": 60,
+          "flagged_windows": 5,
+          "flagged_duration_s": 10,
+          "flagged_duration_fraction": 0.16666666666666666,
+          "flagged_duration_percent": 16.67,
+          "longest_flagged_run_s": 10.0,
+          "flagged_intervals": [
+            {
+              "boot_id": "multi-boot-106",
+              "start_s": 30.0,
+              "end_s": 40.0,
+              "duration_s": 10.0
+            }
+          ],
+          "model_flagged_windows": 5,
+          "rule_flagged_windows": 5,
+          "rule_reason_windows": {
+            "gyro_rapid_changes_increased": 5
+          },
+          "window_feature_aggregates": {
+            "gyro_x_mean": {
+              "mean_of_window_values": 0.12739520000000001,
+              "baseline_mean_of_window_values": -0.004377380555555542,
+              "delta": 0.13177258055555555
+            },
+            "gyro_x_std": {
+              "mean_of_window_values": 13.642243464766327,
+              "baseline_mean_of_window_values": 12.759894691724453,
+              "delta": 0.8823487730418744
+            },
+            "gyro_y_mean": {
+              "mean_of_window_values": -0.12560786666666665,
+              "baseline_mean_of_window_values": -0.008078950000000012,
+              "delta": -0.11752891666666664
+            },
+            "gyro_y_std": {
+              "mean_of_window_values": 9.074907987026826,
+              "baseline_mean_of_window_values": 8.516102005692716,
+              "delta": 0.5588059813341104
+            },
+            "gyro_z_mean": {
+              "mean_of_window_values": 0.06233880000000002,
+              "baseline_mean_of_window_values": -0.006315838888888901,
+              "delta": 0.06865463888888892
+            },
+            "gyro_z_std": {
+              "mean_of_window_values": 6.817828143900224,
+              "baseline_mean_of_window_values": 6.391080387455202,
+              "delta": 0.42674775644502194
+            },
+            "gyro_rapid_change_count": {
+              "mean_of_window_values": 0.3333333333333333,
+              "baseline_mean_of_window_values": 0.0,
+              "delta": 0.3333333333333333
+            }
+          },
+          "model_threshold": 0.10518577329758438,
+          "additional_rule": {
+            "feature": "gyro_rapid_change_count",
+            "baseline_mean": 0.0,
+            "transform": "raw_count",
+            "threshold": 0.0,
+            "unit": "events_per_2s_window",
+            "quantile": 0.95,
+            "quantile_method": "higher",
+            "comparison": "strictly_greater_than",
+            "combine": "model_flag OR rule_flag",
+            "calibration_windows": 180,
+            "calibration_session_ids": [
+              "multi-session-013",
+              "multi-session-014",
+              "multi-session-015",
+              "multi-session-016",
+              "multi-session-017",
+              "multi-session-018"
+            ]
+          },
+          "within_window_rapid_event_count_sum": 10,
+          "rapid_event_count_note": "Sum of within-window counts; a boundary-spanning event may be counted twice"
+        }
+      }
+    }
+  ],
+  "limitations": [
+    "No validated session verdict; flagged duration is not a health risk probability",
+    "Complete 60-second single-boot synthetic sessions only; missing-data summaries not implemented",
+    "Mean of window standard deviations is not a whole-session standard deviation",
+    "Feature deltas compare session-average window features to training window averages; no session z-score",
+    "Ground truth and scenario labels are not used to create summaries"
+  ]
+}

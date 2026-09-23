@@ -1,6 +1,7 @@
 {
   "device_id": "mock-device-01",
-  "session_id": "mock-session-001",
+  "session_id": "mock-session-v1-001",
+  "boot_id": "mock-boot-001",
   "user_id": "mock-user-001",
   "is_synthetic": true,
   "policy": "mock_strict_2s_no_imputation_v1",

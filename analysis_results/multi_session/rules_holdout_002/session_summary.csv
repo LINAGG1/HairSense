@@ -1,0 +1,13 @@
+﻿session_id,sensor,valid_windows,valid_duration_s,flagged_windows,flagged_duration_s,flagged_duration_percent,longest_flagged_run_s,model_flagged_windows,rule_flagged_windows
+multi-session-101,optical,30,60,3,6,10.0,2.0,3,0
+multi-session-101,gyro,30,60,0,0,0.0,0.0,0,0
+multi-session-102,optical,30,60,6,12,20.0,10.0,6,5
+multi-session-102,gyro,30,60,3,6,10.0,2.0,3,0
+multi-session-103,optical,30,60,7,14,23.33,10.0,2,7
+multi-session-103,gyro,30,60,0,0,0.0,0.0,0,0
+multi-session-104,optical,30,60,5,10,16.67,10.0,5,1
+multi-session-104,gyro,30,60,0,0,0.0,0.0,0,0
+multi-session-105,optical,30,60,3,6,10.0,2.0,3,0
+multi-session-105,gyro,30,60,5,10,16.67,10.0,5,5
+multi-session-106,optical,30,60,0,0,0.0,0.0,0,0
+multi-session-106,gyro,30,60,5,10,16.67,10.0,5,5

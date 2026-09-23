@@ -1,0 +1,13 @@
+﻿sensor,session_id,windows,true_positive,false_positive,false_negative,true_negative,precision,recall,false_positive_rate,false_negative_rate
+optical,multi-session-019,30,0,1,0,29,0.0,,0.03333333333333333,
+optical,multi-session-020,30,5,0,0,25,1.0,1.0,0.0,0.0
+optical,multi-session-021,30,0,2,5,23,0.0,0.0,0.08,1.0
+optical,multi-session-022,30,5,0,0,25,1.0,1.0,0.0,0.0
+optical,multi-session-023,30,0,1,0,29,0.0,,0.03333333333333333,
+optical,multi-session-024,30,0,1,0,29,0.0,,0.03333333333333333,
+gyro,multi-session-019,30,0,0,0,30,,,0.0,
+gyro,multi-session-020,30,0,0,0,30,,,0.0,
+gyro,multi-session-021,30,0,0,0,30,,,0.0,
+gyro,multi-session-022,30,0,0,0,30,,,0.0,
+gyro,multi-session-023,30,5,1,0,24,0.8333333333333334,1.0,0.04,0.0
+gyro,multi-session-024,30,0,0,5,25,,0.0,0.0,1.0

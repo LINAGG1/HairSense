@@ -1,0 +1,79 @@
+{
+  "is_synthetic": true,
+  "user_id": "mock-multi-user-001",
+  "device_id": "mock-multi-device-001",
+  "schema_version": 1,
+  "optical_unit": "V",
+  "gyro_unit": "deg/s",
+  "sample_rate_hz": 50,
+  "sensor": "optical",
+  "feature_order": [
+    "optical_mean",
+    "optical_std"
+  ],
+  "reference_windows": 360,
+  "train_sessions": [
+    {
+      "session_id": "multi-session-001",
+      "boot_id": "multi-boot-001"
+    },
+    {
+      "session_id": "multi-session-002",
+      "boot_id": "multi-boot-002"
+    },
+    {
+      "session_id": "multi-session-003",
+      "boot_id": "multi-boot-003"
+    },
+    {
+      "session_id": "multi-session-004",
+      "boot_id": "multi-boot-004"
+    },
+    {
+      "session_id": "multi-session-005",
+      "boot_id": "multi-boot-005"
+    },
+    {
+      "session_id": "multi-session-006",
+      "boot_id": "multi-boot-006"
+    },
+    {
+      "session_id": "multi-session-007",
+      "boot_id": "multi-boot-007"
+    },
+    {
+      "session_id": "multi-session-008",
+      "boot_id": "multi-boot-008"
+    },
+    {
+      "session_id": "multi-session-009",
+      "boot_id": "multi-boot-009"
+    },
+    {
+      "session_id": "multi-session-010",
+      "boot_id": "multi-boot-010"
+    },
+    {
+      "session_id": "multi-session-011",
+      "boot_id": "multi-boot-011"
+    },
+    {
+      "session_id": "multi-session-012",
+      "boot_id": "multi-boot-012"
+    }
+  ],
+  "feature_mean": {
+    "optical_mean": 1.1949016638888896,
+    "optical_std": 0.020710365782957752
+  },
+  "feature_std": {
+    "optical_mean": 0.008042765474209755,
+    "optical_std": 0.001447998102739502
+  },
+  "std_ddof": 0,
+  "constant_reference_features": [],
+  "feature_definition_version": "mean_std_gyro_events_v1",
+  "gyro_rapid_change_threshold_dps2": 500.0,
+  "gyro_rapid_change_count_scope": "within_each_2s_window",
+  "note": "Synthetic one-user baseline; not validated on real sensor data"
+}
