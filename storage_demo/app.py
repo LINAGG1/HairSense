@@ -39,7 +39,8 @@ UInt64 = Annotated[
 class Reading(BaseModel):
     model_config = ConfigDict(extra="forbid", strict=True)
 
-    schema_version: Literal["0.1"]
+    schema_version: Annotated[int, Field(strict=True, ge=1, le=1)]
+    boot_id: Identifier
     seq: UInt64
     timestamp_ms: UInt64
     optical: FiniteFloat | None
@@ -185,10 +186,12 @@ def receive(batch: Batch):
                     + " FROM sensor_readings "
                     "WHERE device_id=%s "
                     "AND session_id=%s "
+                    "AND boot_id=%s "
                     "AND seq=%s",
                     (
                         batch.device_id,
                         batch.session_id,
+                        reading.boot_id,
                         reading.seq
                     ),
                 )
@@ -199,7 +202,7 @@ def receive(batch: Batch):
                     raise HTTPException(
                         409,
                         f"Same identifier has different values: "
-                        f"seq={reading.seq}"
+                        f"boot_id={reading.boot_id}, seq={reading.seq}"
                     )
 
                 duplicates += 1
@@ -220,6 +223,7 @@ def receive(batch: Batch):
 def readings(
     device_id: Identifier,
     session_id: Identifier,
+    boot_id: Identifier,
     after_seq: int = Query(-1, ge=-1),
     limit: int = Query(500, ge=1, le=500),
 ):
@@ -230,17 +234,19 @@ def readings(
         cursor.execute(
             "SELECT "
             "device_id,session_id,user_id,is_synthetic,"
-            "schema_version,seq,timestamp_ms,"
+            "schema_version,boot_id,seq,timestamp_ms,"
             "optical,gyro_x,gyro_y,gyro_z "
             "FROM sensor_readings "
             "WHERE device_id=%s "
             "AND session_id=%s "
+            "AND boot_id=%s "
             "AND seq>%s "
             "ORDER BY seq "
             "LIMIT %s",
             (
                 device_id,
                 session_id,
+                boot_id,
                 after_seq,
                 limit
             ),

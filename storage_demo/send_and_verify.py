@@ -23,6 +23,8 @@ def main():
     ]
     if not expected or len({row['seq'] for row in expected}) != len(expected):
         raise RuntimeError("Source must be nonempty and contain unique sequence numbers")
+    if any(row["boot_id"] != metadata["boot_id"] for row in expected):
+        raise RuntimeError("Source boot_id must match metadata boot_id")
     context = {
         key: metadata[key]
         for key in ("device_id", "session_id", "user_id", "is_synthetic")
@@ -46,7 +48,8 @@ def main():
             result = checked(client.get(
                 BASE_URL + "/readings",
                 params={"device_id": context["device_id"],
-                        "session_id": context["session_id"], "after_seq": after_seq},
+                        "session_id": context["session_id"],
+                        "boot_id": metadata["boot_id"], "after_seq": after_seq},
                 timeout=30,
             ))
             if not result["items"]:

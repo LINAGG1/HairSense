@@ -12,7 +12,7 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SENSORS = ("optical", "gyro_x", "gyro_y", "gyro_z")
-FIELDS = ("schema_version", "seq", "timestamp_ms", *SENSORS)
+FIELDS = ("schema_version", "boot_id", "seq", "timestamp_ms", *SENSORS)
 WINDOW_MS = 2000
 
 
@@ -26,6 +26,7 @@ def fetch(meta):
                 "http://127.0.0.1:8000/readings",
                 params={"device_id": meta["device_id"],
                         "session_id": meta["session_id"],
+                        "boot_id": meta["boot_id"],
                         "after_seq": after, "limit": 500},
                 timeout=30,
             )
@@ -56,8 +57,10 @@ def process(rows, meta):
         for key in ("seq", "timestamp_ms"):
             if type(row[key]) is not int or row[key] < 0:
                 raise ValueError(f"Invalid integer field: {key}")
-        if row["schema_version"] != "0.1":
+        if type(row["schema_version"]) is not int or row["schema_version"] != 1:
             raise ValueError("Unsupported schema version")
+        if row["boot_id"] != meta["boot_id"]:
+            raise ValueError("Reading boot_id does not match metadata; process each boot separately")
         seq = row["seq"]
         if seq in unique:
             if unique[seq] != row:
@@ -134,6 +137,7 @@ def process(rows, meta):
 
     report = {
         "device_id": meta["device_id"], "session_id": meta["session_id"],
+        "boot_id": meta["boot_id"],
         "user_id": meta["user_id"], "is_synthetic": True,
         "policy": "mock_strict_2s_no_imputation_v1",
         "expected_count": total_expected,
