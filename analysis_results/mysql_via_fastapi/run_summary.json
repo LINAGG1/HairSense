@@ -2,11 +2,11 @@
   "source": "mysql_via_fastapi",
   "is_synthetic": true,
   "feature_windows": 28,
-  "features_per_window": 16,
+  "features_per_window": 9,
   "baseline_windows": 10,
   "evaluated_windows": 18,
   "excluded_windows": 2,
-  "flagged_windows": 8,
+  "flagged_windows": 7,
   "numpy_version": "2.5.3",
   "sklearn_version": "1.9.1",
   "model_settings": {
