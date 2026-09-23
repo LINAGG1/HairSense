@@ -16,7 +16,7 @@ st.set_page_config(
     layout="centered"
 )
 
-MODEL_PATH = "best_effnet_b0_full.pth"
+MODEL_PATH = "best_effnet_b0_focused.pth"
 
 LABELS = [
     "미세각질",

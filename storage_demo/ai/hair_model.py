@@ -44,7 +44,7 @@ class HairSenseModel(nn.Module):
 # HairSense
 MODEL_PATH = (
     Path(__file__).resolve().parents[2]
-    / "best_effnet_b0_full.pth"
+    / "best_effnet_b0_focused.pth"
 )
 
 
