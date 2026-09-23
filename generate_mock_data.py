@@ -13,7 +13,8 @@ OPTICAL_UNIT = "V"
 GYRO_UNIT = "deg/s"
 
 # Test choices, not measured physical limits or personal normal ranges.
-SCHEMA_VERSION = "0.1"  # Proposed version value; confirm before integration.
+SCHEMA_VERSION = 1  # Proposed version value; confirm before integration.
+BOOT_ID = "mock-boot-001"  # 이번 파일은 한 번의 부팅을 가정
 DURATION_SECONDS = 60
 START_TIMESTAMP_MS = 1000  # Capture starts one second after simulated boot.
 OPTICAL_MEAN = 1.2
@@ -25,6 +26,7 @@ def sensor_value(value):
     """Keep zero; convert missing and non-finite readings to JSON null."""
     if value is None:
         return None
+    
     value = float(value)
     return round(value, 4) if math.isfinite(value) else None
 
@@ -33,6 +35,7 @@ def main():
     rng = random.Random(42)
     output_dir = Path(__file__).resolve().parent / "mock_data"
     output_dir.mkdir(exist_ok=True)
+
     total_samples = SAMPLE_RATE_HZ * DURATION_SECONDS
     written_count = null_count = dropped_count = 0
 
@@ -80,6 +83,7 @@ def main():
 
             message = {
                 "schema_version": SCHEMA_VERSION,
+                "boot_id": BOOT_ID,
                 "seq": seq,
                 "timestamp_ms": timestamp_ms,
                 "optical": sensor_value(optical),
@@ -97,9 +101,9 @@ def main():
         "is_synthetic": True,
         "purpose": "수신·저장·전처리 기능 테스트",
         "schema_version": SCHEMA_VERSION,
-        "schema_version_status": "필드는 합의됨; 버전 문자열 0.1은 제안값",
+        "schema_version_status": "전자팀 전달 규격: 정수 1",
         "device_id": "mock-device-01",
-        "session_id": "mock-session-001",
+        "session_id": "mock-session-v1-001",
         "user_id": "mock-user-001",
         "sample_rate_hz": SAMPLE_RATE_HZ,
         "interval_ms": INTERVAL_MS,
@@ -109,12 +113,19 @@ def main():
         "timestamp_reference": "ESP32 부팅 후 경과 시간",
         "optical_unit": OPTICAL_UNIT,
         "gyro_unit": GYRO_UNIT,
-        "adc_resolution_bits": None,
+        "adc_resolution_bits": 12,
         "adc_input_range_v": None,
         "gyro_full_scale_dps": None,
-        "hardware_settings_status": "ADC 설정과 자이로 측정 범위는 추가 확인 필요",
+        "hardware_settings_status": (
+            "ADC 해상도 12-bit 확정; "
+            "ADC 입력 범위, 감쇠, 보정 설정과 자이로 측정 범위는 추가 확인 필요"
+            ),
+        "boot_id": BOOT_ID,
         "reboot_simulated": False,
-        "reboot_note": "재부팅 시 timestamp_ms와 seq 초기화; boot_id 추가는 미합의",
+        "reboot_note": ( 
+            "이번 파일은 단일 부팅 데이터; "
+            "재부팅 시 boot_id 변경 및 timestamp_ms·seq 초기화"
+            ),
         "random_seed": 42,
         "expected_samples": total_samples,
         "written_samples": written_count,
