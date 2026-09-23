@@ -39,9 +39,40 @@ Execute마다 Gemini 요청을 한 번 보냅니다. 자동 재시도와 캐시�
 | invalid_model_configuration | GEMINI_MODEL의 모델 이름 |
 | provider_auth_error | 키와 모델 접근 권한 |
 | provider_rate_limited | 공급자 할당량/호출 제한 |
+| provider_model_unavailable | 현재 모델을 이 키와 API 버전에서 찾거나 사용할 수 있는지 확인 |
+| provider_invalid_request | 요청 필드·모델 기능·프로젝트 사용 조건 확인 |
 | provider_timeout / provider_unavailable | 네트워크와 공급자 상태 |
 | provider_request_rejected | 모델 사용 가능 여부, 키 제한, 요청 설정; 원문 오류는 노출하지 않음 |
 | provider_response_incomplete / output_validation_failed | 응답 잘림, JSON 형식, 고정 관측 문장 변경 등 |
+
+오류를 확인할 때는 실제 Server response의 `feedback`에서 다음 네 항목을 확인합니다.
+`fallback_reason`, `provider_http_status`, `provider_error_status`, `provider_error_reason`.
+HTTP 200은 로컬 API가 기본 문구를 반환한 경우에도 표시됩니다.
+Swagger의 Example Value는 실제 호출 결과가 아닙니다.
+Google 오류 원문/키/프로젝트 메타데이터는 반환하지 않고, 알려진 오류 코드만 반환합니다.
+
+## 상세 오류 코드가 없는 HTTP 400 진단
+
+서버를 Ctrl+C로 멈추고, 키를 설정했던 동일한 PowerShell의 `storage_demo`에서 실행합니다.
+
+```powershell
+..\.venv\Scripts\python.exe diagnose_gemini.py
+```
+
+이 명령은 현재 모델과 실제 센서 안내 요청 형식으로 외부 요청을 딱 한 번 보냅니다.
+자동 재시도는 없으며 공급자 요금/할당량이 적용될 수 있습니다.
+오류 메시지에서 설정한 키, 일반적인 Google 키 형태, URL, 이메일, projects/ 식별자를 가립니다.
+비 JSON 응답은 본문을 출력하지 않습니다. 출력 공유 전 다른 식별 정보도 없는지 확인하세요.
+HTTP 200만으로 안내 문구 검증까지 성공한 것은 아니므로, 이후 서버를 다시 실행해 Swagger에서 확인합니다.
+
+HTML 오류가 반환되는 경우, 같은 키와 모델의 정보 조회를 별도로 검사할 수 있습니다.
+
+```powershell
+..\.venv\Scripts\python.exe diagnose_gemini.py --check-model
+```
+
+이 옵션은 `models.get` 조회 한 번만 수행하며 센서 파일을 읽거나 생성 요청을 보내지 않습니다.
+조회 성공은 문장 생성 성공을 보장하지 않습니다. 결과를 보고 생성 요청과 접근 문제를 구분합니다.
 
 ## 문구의 범위
 

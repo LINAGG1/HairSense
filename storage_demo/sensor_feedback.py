@@ -47,6 +47,9 @@ class FeedbackResult(StrictModel):
     source: Literal["gemini", "fallback"]
     fallback_reason: str | None
     model: str | None
+    provider_http_status: int | None = None
+    provider_error_status: str | None = None
+    provider_error_reason: str | None = None
     prompt_version: str = PROMPT_VERSION
     generation_mode: str = "fixed_fact_with_generated_tip"
     notice: str = NOTICE
@@ -136,13 +139,52 @@ def reject_constant(value):
     raise ValueError("Non-finite JSON")
 
 
+def provider_error_details(response):
+    """오류 원문/메타데이터 대신 알려진 상태 코드만 반환합니다."""
+    statuses = {
+        "INVALID_ARGUMENT", "FAILED_PRECONDITION", "NOT_FOUND", "PERMISSION_DENIED",
+        "UNAUTHENTICATED", "RESOURCE_EXHAUSTED", "INTERNAL", "UNAVAILABLE",
+        "DEADLINE_EXCEEDED", "UNIMPLEMENTED", "OUT_OF_RANGE", "ABORTED", "UNKNOWN",
+    }
+    reasons = {
+        "API_KEY_INVALID", "API_KEY_EXPIRED", "API_KEY_SERVICE_BLOCKED",
+        "API_KEY_HTTP_REFERRER_BLOCKED", "API_KEY_IP_ADDRESS_BLOCKED",
+        "API_KEY_ANDROID_APP_BLOCKED", "API_KEY_IOS_APP_BLOCKED",
+        "SERVICE_DISABLED", "BILLING_DISABLED", "CONSUMER_INVALID",
+        "ACCESS_TOKEN_SCOPE_INSUFFICIENT", "RATE_LIMIT_EXCEEDED",
+    }
+    result = {"provider_error_status": None, "provider_error_reason": None}
+    try:
+        data = response.json()
+    except ValueError:
+        return result
+    error = data.get("error") if isinstance(data, dict) else None
+    if not isinstance(error, dict):
+        return result
+    status = error.get("status")
+    if isinstance(status, str) and status in statuses:
+        result["provider_error_status"] = status
+    details = error.get("details", [])
+    if isinstance(details, list):
+        for detail in details:
+            if not isinstance(detail, dict):
+                continue
+            reason = detail.get("reason")
+            if isinstance(reason, str) and reason in reasons:
+                result["provider_error_reason"] = reason
+                break
+    return result
+
+
 def generate_feedback(session):
     evidence = build_evidence(session)
     model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL).strip()
     model_valid = bool(re.fullmatch(r"gemini-[A-Za-z0-9.-]{1,80}", model))
+    diagnostics = {}
     def fallback(reason):
         return FeedbackResult(source="fallback", fallback_reason=reason,
-                              model=model if model_valid else None, messages=fallback_messages(evidence))
+                              model=model if model_valid else None, messages=fallback_messages(evidence),
+                              **diagnostics)
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     if not key:
         return fallback("missing_api_key")
@@ -160,10 +202,19 @@ def generate_feedback(session):
     except requests.RequestException:
         return fallback("provider_unavailable")
     try:
+        diagnostics["provider_http_status"] = response.status_code
+        if response.status_code != 200:
+            diagnostics.update(provider_error_details(response))
+        if diagnostics.get("provider_error_reason") in ("API_KEY_INVALID", "API_KEY_EXPIRED"):
+            return fallback("provider_auth_error")
         if response.status_code in (401, 403):
             return fallback("provider_auth_error")
         if response.status_code == 429:
             return fallback("provider_rate_limited")
+        if response.status_code == 404:
+            return fallback("provider_model_unavailable")
+        if response.status_code == 400:
+            return fallback("provider_invalid_request")
         if response.status_code != 200:
             return fallback("provider_request_rejected")
         # 공급자 오류 본문은 API 응답이나 로그에 노출하지 않습니다.
@@ -181,4 +232,5 @@ def generate_feedback(session):
         return fallback("output_validation_failed")
     finally:
         response.close()
-    return FeedbackResult(source="gemini", fallback_reason=None, model=model, messages=messages)
+    return FeedbackResult(source="gemini", fallback_reason=None, model=model,
+                          provider_http_status=200, messages=messages)

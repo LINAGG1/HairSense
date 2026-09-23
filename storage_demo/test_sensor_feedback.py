@@ -89,14 +89,48 @@ class SensorFeedbackTests(unittest.TestCase):
 
     def test_provider_failures(self):
         for status, reason in [(403, "provider_auth_error"), (429, "provider_rate_limited"),
-                               (400, "provider_request_rejected"), (500, "provider_request_rejected")]:
+                               (400, "provider_invalid_request"), (404, "provider_model_unavailable"),
+                               (500, "provider_request_rejected")]:
             response = self.mock_response(status=status)
             response.text = "test-key sensitive upstream message"
             result = service.generate_feedback(self.session)
             self.assertEqual(result.source, "fallback")
             self.assertEqual(result.fallback_reason, reason)
+            self.assertEqual(result.provider_http_status, status)
             self.assertNotIn("test-key", result.model_dump_json())
-            response.json.assert_not_called()
+            response.json.assert_called_once()
+
+    def test_provider_error_codes_without_sensitive_details(self):
+        response = self.mock_response(status=400)
+        response.json.return_value = {"error": {
+            "status": "INVALID_ARGUMENT", "message": "API key test-key is invalid",
+            "details": [{"reason": "API_KEY_INVALID", "metadata": {"key": "test-key"}}],
+        }}
+        result = service.generate_feedback(self.session)
+        self.assertEqual(result.fallback_reason, "provider_auth_error")
+        self.assertEqual(result.provider_http_status, 400)
+        self.assertEqual(result.provider_error_status, "INVALID_ARGUMENT")
+        self.assertEqual(result.provider_error_reason, "API_KEY_INVALID")
+        self.assertNotIn("test-key", result.model_dump_json())
+
+    def test_unrecognized_error_fields_not_exposed(self):
+        response = self.mock_response(status=404)
+        response.json.return_value = {"error": {
+            "status": "test-key", "message": "test-key",
+            "details": [{"reason": "test-key"}],
+        }}
+        result = service.generate_feedback(self.session)
+        self.assertEqual(result.fallback_reason, "provider_model_unavailable")
+        self.assertIsNone(result.provider_error_status)
+        self.assertIsNone(result.provider_error_reason)
+        self.assertNotIn("test-key", result.model_dump_json())
+
+    def test_non_json_provider_error_keeps_http_status(self):
+        response = self.mock_response(status=500)
+        response.json.side_effect = ValueError("not JSON")
+        result = service.generate_feedback(self.session)
+        self.assertEqual(result.provider_http_status, 500)
+        self.assertEqual(result.fallback_reason, "provider_request_rejected")
 
     def test_incomplete_or_malformed_response(self):
         self.mock_response(finish="MAX_TOKENS")
