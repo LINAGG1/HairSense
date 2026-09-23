@@ -12,9 +12,11 @@ from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat
 
 from ai.hair_model import load_model, predict
+from sensor_analysis_api import router as sensor_analysis_router
 
 
 app = FastAPI(title="HairSense local storage exercise")
+app.include_router(sensor_analysis_router)
 log = logging.getLogger(__name__)
 
 Identifier = Annotated[
