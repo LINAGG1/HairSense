@@ -76,6 +76,38 @@ HTML 오류가 반환되는 경우, 같은 키와 모델의 정보 조회를 별
 
 ## 문구의 범위
 
+### 저장된 DB 요약으로 출력 검증 오류 진단
+
+서버를 실행한 채, 별도 storage_demo 터미널에도 GEMINI_API_KEY를 설정하고 실행합니다.
+
+```powershell
+..\.venv\Scripts\python.exe diagnose_gemini.py --check-feedback
+```
+
+DB 결과 조회 GET으로 multi-session-102의 저장된 요약을 가져와 새로운 Gemini 요청을 한 번 보냅니다.
+DB 결과/캐시를 변경하지 않습니다. API 요금/할당량이 적용될 수 있습니다.
+생성은 매번 다를 수 있으므로 과거 실패 응답을 복원하는 검사가 아닙니다.
+검증 기준/프롬프트는 변경하지 않았으며 원문을 출력하지 않고 고정 오류 코드와 센서 이름만 보여줍니다.
+
+| validation_error_code | 의미 |
+| --- | --- |
+| message_schema_mismatch | 필수 필드·자료형·문장 길이 등 불일치 |
+| finding_changed | 관측 분류 변경 |
+| fixed_fact_changed | 고정 관측 문장 변경 |
+| unsupported_advice_content | 추가 안내에서 금지한 수치·표현 감지 |
+| advice_language_or_ending | 한국어/허용 문장 종결 형식 검사 실패 |
+| generated_json_invalid | 생성 문장이 유효한 JSON이 아님 |
+| generated_text_too_long | 생성 텍스트가 처리 길이 제한 초과 |
+| provider_response_not_json / provider_response_structure | 공급자 응답 파싱·구조 검사 실패 |
+
+이전에 저장된 fallback에는 새 오류 코드가 없고 그대로 유지됩니다.
+`unsupported_advice_content`일 때 `validation_error_rules`에 걸린 규칙을 함께 표시합니다.
+예: `term:측정`, `number_or_markup`, `url`. 원문이나 실제 숫자·URL을 출력하지 않습니다.
+이는 문자열 규칙의 일치 결과이며 실제로 잘못된 의미의 문장이라는 확정 판정은 아닙니다.
+`sensor_feedback_2`에서는 추가 안내 문장 앞의 `측정할 때는`, `측정 시에는` 등 사용 상황 표현을 허용합니다.
+측정이라는 단어를 전면 허용하는 것은 아니며 뒤에 붙는 수치·진단·관측 방향 제한은 유지합니다.
+예전 실패 응답 원문은 저장하지 않았으므로 그 문장 자체가 무해했는지는 소급 확인할 수 없습니다.
+
 Python이 확정한 관측 문장을 첫 문장으로 고정하고, Gemini가 사용 안내를 덧붙입니다.
 모델이 새로운 숫자나 관측 방향을 만들지 않도록 JSON/문구를 검사합니다.
 추가 문장 검사는 보수적인 문자열 검사이며, 자유 문장의 의미를 완전히 보증하지 않습니다.

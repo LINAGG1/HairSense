@@ -2,7 +2,7 @@
 import json
 import logging
 import io
-from contextlib import contextmanager
+from contextlib import contextmanager, ExitStack
 from pathlib import Path
 from typing import Annotated, Literal
 
@@ -13,6 +13,7 @@ from pydantic import BaseModel, ConfigDict, Field, FiniteFloat
 
 from ai.hair_model import load_model, predict
 from sensor_analysis_api import router as sensor_analysis_router
+from sensor_pipeline_api import make_router, session_lock, require_receiving
 
 
 app = FastAPI(title="HairSense local storage exercise")
@@ -98,6 +99,9 @@ def database():
             connection.close()
 
 
+app.include_router(make_router(database))
+
+
 # ---------------------------------------------------------
 # AI model
 # ---------------------------------------------------------
@@ -153,7 +157,12 @@ def receive(batch: Batch):
 
     with database() as connection, connection.cursor(
         dictionary=True
-    ) as cursor:
+    ) as cursor, ExitStack() as locks:
+
+        for boot_id in sorted({reading.boot_id for reading in batch.readings}):
+            key = (batch.device_id, batch.session_id, boot_id)
+            locks.enter_context(session_lock(connection, key))
+            require_receiving(connection, key, batch.user_id)
 
         for reading in batch.readings:
             values = {

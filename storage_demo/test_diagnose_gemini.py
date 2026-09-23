@@ -8,6 +8,30 @@ import diagnose_gemini as diagnostic
 
 
 class DiagnosticTests(unittest.TestCase):
+    def test_feedback_diagnostic_reads_db_once_and_does_not_save(self):
+        response = Mock(status_code=200)
+        response.__enter__ = Mock(return_value=response)
+        response.__exit__ = Mock(return_value=False)
+        response.json.return_value = {"summary": {"test": "summary"}}
+        result = {"source": "fallback", "fallback_reason": "output_validation_failed",
+                  "provider_http_status": 200, "provider_error_status": None, "provider_error_reason": None,
+                  "validation_error_code": "fixed_fact_changed", "validation_error_sensor": "gyro", "validation_error_rules": [],
+                  "messages": {"private": "not for diagnostic output"}}
+        with patch.dict("os.environ", {"GEMINI_API_KEY": "test-secret"}), \
+                patch.object(diagnostic.requests, "get", return_value=response) as get, \
+                patch.object(diagnostic.requests, "post") as post, \
+                patch.object(diagnostic, "generate_feedback", return_value=Mock(model_dump=Mock(return_value=result))) as generate, \
+                patch("builtins.print") as output:
+            diagnostic.main(check_feedback=True)
+        get.assert_called_once()
+        self.assertNotIn("headers", get.call_args.kwargs)
+        generate.assert_called_once_with({"test": "summary"})
+        post.assert_not_called()
+        printed = output.call_args.args[0]
+        self.assertNotIn("private", printed)
+        self.assertNotIn("test-secret", printed)
+        self.assertEqual(json.loads(printed)["validation_error_code"], "fixed_fact_changed")
+
     def test_model_lookup_uses_get_only_and_no_sensor_files(self):
         response = Mock(status_code=200)
         response.__enter__ = Mock(return_value=response)

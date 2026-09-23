@@ -7,11 +7,11 @@ import re
 from typing import Literal
 
 import requests
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
 
 
 DEFAULT_MODEL = "gemini-3.5-flash-lite"
-PROMPT_VERSION = "sensor_feedback_1"
+PROMPT_VERSION = "sensor_feedback_2"
 NOTICE = "가상 데이터로 만든 시험 안내입니다. 이상 표시 비율은 건강 위험 확률이 아닙니다."
 FACTS = {
     "optical_high": "이번 측정의 일부 구간에서 광학 반사 측정값이 평소 기준보다 높게 나타났어요.",
@@ -27,6 +27,15 @@ DEFAULT_TIPS = {
     "optical": "다음에도 비슷한 조명과 거리에서 사용해 보세요.",
     "gyro": "다음에도 일정한 속도로 부드럽게 빗어보세요.",
 }
+
+# Return only fixed rule names, never a substring of the provider response.
+ADVICE_RULES = [
+    ("number_or_markup", r"[0-9%<>]"), ("url", r"https?://"),
+] + [("term:" + word, re.escape(word)) for word in (
+    "탈모", "염증", "피지", "질환", "진단", "치료", "위험", "건강", "정상", "확률",
+    "압력", "세게", "강하게", "증가", "감소", "높", "낮", "평소", "오늘", "측정",
+    "표준편차", "평균", "많", "적게", "크게", "작게",
+)]
 
 
 class StrictModel(BaseModel):
@@ -50,6 +59,9 @@ class FeedbackResult(StrictModel):
     provider_http_status: int | None = None
     provider_error_status: str | None = None
     provider_error_reason: str | None = None
+    validation_error_code: str | None = None
+    validation_error_sensor: Literal["optical", "gyro"] | None = None
+    validation_error_rules: list[str] = Field(default_factory=list)
     prompt_version: str = PROMPT_VERSION
     generation_mode: str = "fixed_fact_with_generated_tip"
     notice: str = NOTICE
@@ -107,6 +119,8 @@ def request_payload(evidence):
         "각 message는 해당 fixed_fact를 한 글자도 바꾸지 않고 그대로 시작한다. "
         "그 뒤에 선택적으로 짧고 정중한 사용 안내 한 문장을 덧붙인다. 전체 길이는 260자 이내. "
         "추가 안내는 광학이면 비슷한 조명/거리 유지, 자이로면 일정한 속도로 부드럽게 빗기만 다룬다. "
+        "광학 안내 예: '측정할 때는 비슷한 조명과 거리를 유지해 주세요.' "
+        "측정을 언급한다면 추가 안내 문장 맨 앞에 '측정할 때는' 또는 '측정 시에는'만 사용한다. "
         "추가 관측 사실, 원인 추정, 새로운 증가/감소 판단, 숫자, 비율, 빈도, 하루 전체 판단을 만들지 않는다. "
         "질병/탈모/피지/염증/건강/위험/진단/정상 판정이나 치료 권고는 하지 않는다. "
         "이상으로 표시되지 않았다는 사실은 건강하다는 뜻이 아니다. "
@@ -120,18 +134,39 @@ def request_payload(evidence):
     }
 
 
+class OutputValidationError(ValueError):
+    def __init__(self, code, sensor=None, rules=()):
+        super().__init__(code)
+        self.code, self.sensor = code, sensor
+        self.rules = list(rules)
+
+
 def validate_messages(raw, evidence):
-    messages = Messages.model_validate(raw)
+    try:
+        messages = Messages.model_validate(raw)
+    except ValidationError as exc:
+        location = exc.errors(include_input=False)[0]["loc"]
+        sensor = location[0] if location and location[0] in ("optical", "gyro") else None
+        raise OutputValidationError("message_schema_mismatch", sensor) from None
     for sensor, item in evidence["sensors"].items():
         result = getattr(messages, sensor)
-        if result.finding != item["finding"] or not result.message.startswith(item["fixed_fact"]):
-            raise ValueError("Changed factual statement")
+        if result.finding != item["finding"]:
+            raise OutputValidationError("finding_changed", sensor)
+        if not result.message.startswith(item["fixed_fact"]):
+            raise OutputValidationError("fixed_fact_changed", sensor)
         tip = result.message[len(item["fixed_fact"]):].strip()
         # 보수적인 문자열 검사이며 자유 문장의 의미를 완전히 검증하는 장치는 아닙니다.
-        if re.search(r"[0-9%<>]|https?://|탈모|염증|피지|질환|진단|치료|위험|건강|정상|확률|압력|세게|강하게|증가|감소|높|낮|평소|오늘|측정|표준편차|평균|많|적게|크게|작게", tip):
-            raise ValueError("Unsupported advice content")
+        # Allow only a leading usage context, not arbitrary mentions of measurements.
+        # Keep the original message; normalize only the text used by the word filter.
+        checked_tip = re.sub(
+            r"^(?:다음(?:에도|에는|에)?\s+)?측정(?:할 때(?:는|에도)?| 시(?:에는|에도|는)?)[,\s]+",
+            "", tip, count=1,
+        )
+        rules = [name for name, pattern in ADVICE_RULES if re.search(pattern, checked_tip)]
+        if rules:
+            raise OutputValidationError("unsupported_advice_content", sensor, rules)
         if tip and (not re.search(r"[가-힣]", tip) or not tip.endswith(("세요.", "봐요.", "보아요."))):
-            raise ValueError("Expected short Korean usage advice")
+            raise OutputValidationError("advice_language_or_ending", sensor)
     return messages
 
 
@@ -201,6 +236,7 @@ def generate_feedback(session):
         return fallback("provider_timeout")
     except requests.RequestException:
         return fallback("provider_unavailable")
+    validation_stage = "provider_response_structure"
     try:
         diagnostics["provider_http_status"] = response.status_code
         if response.status_code != 200:
@@ -218,17 +254,27 @@ def generate_feedback(session):
         if response.status_code != 200:
             return fallback("provider_request_rejected")
         # 공급자 오류 본문은 API 응답이나 로그에 노출하지 않습니다.
+        validation_stage = "provider_response_not_json"
         data = response.json()
+        validation_stage = "provider_response_structure"
         candidate = data["candidates"][0]
         if candidate.get("finishReason") != "STOP":
             return fallback("provider_response_incomplete")
         text = "".join(part.get("text", "") for part in candidate["content"]["parts"]
                        if not part.get("thought", False))
         if len(text) > 4000:
+            diagnostics["validation_error_code"] = "generated_text_too_long"
             return fallback("output_validation_failed")
+        validation_stage = "generated_json_invalid"
         raw = json.loads(text, parse_constant=reject_constant)
         messages = validate_messages(raw, evidence)
+    except OutputValidationError as exc:
+        diagnostics["validation_error_code"] = exc.code
+        diagnostics["validation_error_sensor"] = exc.sensor
+        diagnostics["validation_error_rules"] = exc.rules
+        return fallback("output_validation_failed")
     except (ValueError, KeyError, IndexError, TypeError, AttributeError):
+        diagnostics["validation_error_code"] = validation_stage
         return fallback("output_validation_failed")
     finally:
         response.close()

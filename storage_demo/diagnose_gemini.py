@@ -8,7 +8,7 @@ import re
 import requests
 
 from sensor_analysis_api import get_session
-from sensor_feedback import DEFAULT_MODEL, build_evidence, request_payload, provider_error_details
+from sensor_feedback import DEFAULT_MODEL, build_evidence, request_payload, provider_error_details, generate_feedback
 
 
 def redact_message(message, key):
@@ -47,7 +47,7 @@ def response_diagnostics(response, key):
     return result
 
 
-def main(check_model=False):
+def main(check_model=False, check_feedback=False):
     key = os.environ.get("GEMINI_API_KEY", "").strip()
     model = os.environ.get("GEMINI_MODEL", DEFAULT_MODEL).strip()
     if not key:
@@ -55,6 +55,24 @@ def main(check_model=False):
         return
     if not re.fullmatch(r"gemini-[A-Za-z0-9.-]{1,80}", model):
         print("invalid_model_configuration")
+        return
+    if check_feedback:
+        # Read the persisted DB summary via GET. Do not call the completion endpoint.
+        try:
+            with requests.get(
+                "http://127.0.0.1:8000/sensor-sessions/multi-session-102/analysis",
+                params={"device_id": "mock-multi-device-001", "boot_id": "multi-boot-102",
+                        "user_id": "mock-multi-user-001"}, timeout=30, allow_redirects=False,
+            ) as response:
+                response.raise_for_status()
+                summary = response.json()["summary"]
+            result = generate_feedback(summary).model_dump()
+        except (requests.RequestException, ValueError, KeyError, TypeError):
+            print("diagnostic_input_error: Check the running server and saved DB summary.")
+            return
+        keys = ("source", "fallback_reason", "provider_http_status", "provider_error_status",
+                "provider_error_reason", "validation_error_code", "validation_error_sensor", "validation_error_rules")
+        print(json.dumps({k: result[k] for k in keys}, ensure_ascii=False, indent=2))
         return
     try:
         url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}"
@@ -82,5 +100,8 @@ def main(check_model=False):
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--check-model", action="store_true", help="Only GET model metadata; no sensor data or generation request")
-    main(check_model=parser.parse_args().check_model)
+    options = parser.add_mutually_exclusive_group()
+    options.add_argument("--check-model", action="store_true", help="Only GET model metadata; no sensor data or generation request")
+    options.add_argument("--check-feedback", action="store_true", help="Read saved DB summary and validate one fresh Gemini response; do not save it")
+    args = parser.parse_args()
+    main(check_model=args.check_model, check_feedback=args.check_feedback)
