@@ -5,6 +5,7 @@ import io
 from contextlib import contextmanager, ExitStack
 from pathlib import Path
 from typing import Annotated, Literal
+from uuid import uuid4
 
 import mysql.connector
 from fastapi import FastAPI, HTTPException, Query, UploadFile, File
@@ -300,9 +301,9 @@ async def analyze_image(
                 "빈 이미지 파일입니다."
             )
 
-        image = Image.open(
-            io.BytesIO(image_bytes)
-        ).convert("RGB")
+        with Image.open(io.BytesIO(image_bytes)) as original:
+            image_format = original.format
+            image = original.convert("RGB")
 
     except UnidentifiedImageError:
         raise HTTPException(
@@ -320,6 +321,22 @@ async def analyze_image(
             400,
             "이미지 처리에 실패했습니다."
         )
+
+    try:
+        save_dir = Path(__file__).resolve().parent / "received_images"
+        save_dir.mkdir(parents=True, exist_ok=True)
+        extension = {
+            "JPEG": ".jpg",
+            "PNG": ".png",
+            "WEBP": ".webp",
+        }.get(image_format, ".img")
+        save_path = save_dir / f"{uuid4().hex}{extension}"
+        save_path.write_bytes(image_bytes)
+    except OSError:
+        log.exception("Failed to save uploaded image")
+        raise HTTPException(500, "이미지 저장에 실패했습니다.")
+
+    log.info("Received image saved: %s", save_path)
 
     model, device = get_ai_model()
 
