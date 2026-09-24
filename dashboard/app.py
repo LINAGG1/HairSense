@@ -1,7 +1,10 @@
 import streamlit as st
 import pandas as pd
+import matplotlib.pyplot as plt
 
 
+plt.rcParams["font.family"] = "Malgun Gothic"
+plt.rcParams["axes.unicode_minus"] = False 
 # ============================================================
 # Page
 # ============================================================
@@ -318,15 +321,11 @@ if not st.session_state.measurement_done:
             st.rerun()
 
 
-# ============================================================
-# 측정 후 화면
-# ============================================================
-
 else:
 
-    # ========================================================
-    # 상단 헤더
-    # ========================================================
+    # ====================================================
+    # 측정 후 화면
+    # ====================================================
 
     header_left, header_right = st.columns(
         [4.5, 1],
@@ -334,21 +333,14 @@ else:
     )
 
     with header_left:
-
         st.title("HairSense")
-
         st.write(
             "빗질과 함께 두피 상태를 측정해보세요."
         )
 
     with header_right:
-
         st.write("")
         st.write("")
-
-        # ----------------------------------------------------
-        # 다시 측정하기 버튼
-        # ----------------------------------------------------
 
         if st.button(
             "🔄 다시 측정하기",
@@ -357,39 +349,21 @@ else:
             st.session_state.measurement_done = False
             st.rerun()
 
-    # --------------------------------------------------------
-    # 다시 측정하기 버튼 하늘색
-    # --------------------------------------------------------
-
     st.markdown(
         """
         <style>
-
-        /* 마지막에 생성된 버튼 영역을 하늘색으로 표시 */
         div[data-testid="stHorizontalBlock"] div[data-testid="stButton"] button {
             border: 2px solid #87CEEB !important;
         }
-
         </style>
         """,
         unsafe_allow_html=True,
     )
 
 
-    # ========================================================
-    # 측정 완료
-    # ========================================================
-
-    st.success("측정이 완료되었습니다.")
-
-    st.caption(
-        "측정 시각 · 2026.09.24 09:20"
-    )
-
-
-    # ========================================================
-    # 메인 2열
-    # ========================================================
+    # ====================================================
+    # 좌우 메인 영역
+    # ====================================================
 
     left_col, right_col = st.columns(
         [1, 1.35],
@@ -397,14 +371,38 @@ else:
     )
 
 
-    # ========================================================
-    # 왼쪽 : 이미지
-    # ========================================================
+    # ====================================================
+    # 왼쪽 - 측정 이미지
+    # ====================================================
 
     with left_col:
 
-        st.subheader("📷 측정 이미지")
+        # 측정 이미지 제목 + 측정 시각
+        image_title_col, image_time_col = st.columns(
+            [1.6, 1],
+            gap="small",
+        )
 
+        with image_title_col:
+            st.subheader("📷 측정 이미지")
+
+        with image_time_col:
+            st.markdown(
+                """
+                <div style="
+                    font-size: 1.5rem;
+                    font-weight: 400;
+                    margin-top: 2.00rem;
+                    white-space: nowrap;
+                ">
+                    측정 시각 · 2026.09.24 09:20
+                </div>
+                """,
+                unsafe_allow_html=True,
+            )
+
+
+        # 이미지 박스
         image_box = st.container(
             border=True,
             height=600,
@@ -435,20 +433,22 @@ else:
                     "여기에 표시됩니다."
                 )
 
+
         st.caption(
             "실제 서버 연결 후 촬영된 이미지가 표시됩니다."
         )
 
+        # 측정 완료 메시지
+        st.success(
+            "측정이 완료되었습니다."
+        )
 
-    # ========================================================
-    # 오른쪽 : 정보
-    # ========================================================
+
+    # ====================================================
+    # 오른쪽 - 센서 및 분석 결과
+    # ====================================================
 
     with right_col:
-
-        # ----------------------------------------------------
-        # 센서 정보
-        # ----------------------------------------------------
 
         st.subheader(
             "📊 촬영 당시 센서 상태"
@@ -492,86 +492,140 @@ else:
 
         st.divider()
 
+        # ====================================================
+        # 평소와 비교 - 막대그래프
+        # ====================================================
 
-        # ----------------------------------------------------
-        # 평소와 비교
-        # ----------------------------------------------------
+                # ====================================================
+        # 평소와 비교 - 막대그래프
+        # ====================================================
 
         st.subheader(
             "🧠 평소와 비교"
         )
 
-        result_rows = []
+        categories = list(today_result.keys())
 
-        for name in today_result:
+        previous_values = [
+            previous_result[name]
+            for name in categories
+        ]
 
-            previous_grade = previous_result[name]
-            today_grade = today_result[name]
+        today_values = [
+            today_result[name]
+            for name in categories
+        ]
 
-            diff = today_grade - previous_grade
+        x = list(range(len(categories)))
+        width = 0.34
 
-            if diff > 0:
-                change = f"↑ {diff}단계 증가"
-
-            elif diff < 0:
-                change = f"↓ {abs(diff)}단계 감소"
-
-            else:
-                change = "→ 변화 없음"
-
-            result_rows.append(
-                {
-                    "항목": name,
-                    "평소": severity_names[previous_grade],
-                    "오늘": severity_names[today_grade],
-                    "변화": change,
-                }
-            )
-
-        result_df = pd.DataFrame(
-            result_rows
+        fig, ax = plt.subplots(
+            figsize=(10, 5.5)
         )
 
-
-        # ----------------------------------------------------
-        # 큰 표
-        # ----------------------------------------------------
-
-        styled_result_df = (
-            result_df.style
-            .set_properties(
-                **{
-                    "font-size": "24px",
-                    "text-align": "center",
-                    "padding": "12px",
-                }
-            )
-            .set_table_styles(
-                [
-                    {
-                        "selector": "th",
-                        "props": [
-                            ("font-size", "24px"),
-                            ("font-weight", "bold"),
-                            ("text-align", "center"),
-                            ("padding", "12px"),
-                        ],
-                    }
-                ]
-            )
+        # 평소
+        ax.bar(
+            [i - width / 2 for i in x],
+            previous_values,
+            width=width,
+            label="평소",
+            color="#F0EEB8",
+            edgecolor="none",
+            zorder=3,
         )
 
-        st.table(
-            styled_result_df
+        # 오늘
+        ax.bar(
+            [i + width / 2 for i in x],
+            today_values,
+            width=width,
+            label="오늘",
+            color="#99F9A1",
+            edgecolor="none",
+            zorder=3,
+        )
+
+        # X축
+        ax.set_xticks(x)
+
+        ax.set_xticklabels(
+            categories,
+            fontsize=11,
+        )
+
+        # Y축
+        ax.set_yticks(
+            [0, 1, 2, 3]
+        )
+
+        ax.set_yticklabels(
+            [
+                "양호",
+                "경증",
+                "중등도",
+                "중증",
+            ],
+            fontsize=11,
+        )
+
+        ax.set_ylim(
+            0,
+            3.4,
+        )
+
+        # 축 제목
+        ax.set_xlabel(
+            "두피 상태 항목",
+            fontsize=12,
+            labelpad=10,
+        )
+
+        ax.set_ylabel(
+            "상태",
+            fontsize=12,
+            labelpad=10,
+        )
+
+        # 제목/테두리 정리
+        ax.spines["top"].set_visible(False)
+        ax.spines["right"].set_visible(False)
+
+        # 격자
+        ax.grid(
+            axis="y",
+            alpha=0.18,
+            linewidth=0.8,
+            zorder=0,
+        )
+
+        # 범례
+        ax.legend(
+            loc="upper right",
+            frameon=False,
+            fontsize=11,
+        )
+
+        # 여백
+        plt.tight_layout()
+
+        st.pyplot(
+            fig,
+            use_container_width=True,
+        )
+
+        plt.close(fig)
+
+        st.caption(
+            "양호 0 · 경증 1 · 중등도 2 · 중증 3"
         )
 
 
         st.divider()
 
 
-        # ----------------------------------------------------
-        # Gemini 안내
-        # ----------------------------------------------------
+        # ====================================================
+        # 오늘의 안내
+        # ====================================================
 
         st.subheader(
             "💡 오늘의 안내"
@@ -595,9 +649,9 @@ else:
         st.divider()
 
 
-        # ----------------------------------------------------
-        # 측정 상태
-        # ----------------------------------------------------
+        # ====================================================
+        # 분석 상태
+        # ====================================================
 
         status_col1, status_col2, status_col3 = st.columns(3)
 
