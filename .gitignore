@@ -32,3 +32,6 @@ Thumbs.db
 
 db_config.example.json
 db_config.json
+
+#image
+received_images/
