@@ -54,9 +54,9 @@ def session_lock(connection, key):
             cursor.fetchone()
 
 
-def register_session(cursor, key, user_id):
+def register_session(cursor, key, user_id, is_synthetic=True):
     cursor.execute("SELECT DISTINCT user_id,is_synthetic FROM sensor_readings WHERE " + WHERE, key)
-    if any(r["user_id"] != user_id or not r["is_synthetic"] for r in cursor.fetchall()):
+    if any(r["user_id"] != user_id or bool(r["is_synthetic"]) != is_synthetic for r in cursor.fetchall()):
         raise HTTPException(409, "session_owner_or_source_mismatch")
     cursor.execute(
         "INSERT INTO sensor_sessions (device_id,session_id,boot_id,user_id) VALUES (%s,%s,%s,%s) "

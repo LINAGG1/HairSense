@@ -8,13 +8,16 @@ from typing import Annotated, Literal
 from uuid import uuid4
 
 import mysql.connector
-from fastapi import FastAPI, HTTPException, Query, UploadFile, File
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form
+from starlette.concurrency import run_in_threadpool
 from PIL import Image, UnidentifiedImageError
 from pydantic import BaseModel, ConfigDict, Field, FiniteFloat
 
 from ai.hair_model import load_model, predict
 from sensor_analysis_api import router as sensor_analysis_router
 from sensor_pipeline_api import make_router, session_lock, require_receiving
+from real_capture_storage import (OpticalCapture, GyroCapture, normalize_wire,
+                                  store_real_capture, analyze_stored_image)
 
 
 app = FastAPI(title="HairSense local storage exercise")
@@ -280,10 +283,58 @@ def readings(
 # Image AI API
 # ---------------------------------------------------------
 
+def receive_real_capture(payload, image_bytes=None):
+    try:
+        metadata, rows = normalize_wire(payload)
+        result = store_real_capture(database, metadata, rows, image_bytes, Reading)
+    except ValueError as exc:
+        raise HTTPException(422, "invalid_real_capture: check fields, timestamps and image") from exc
+    if image_bytes is not None:
+        # DB is authoritative. Local copy is a recoverable convenience cache.
+        try:
+            directory = Path(__file__).resolve().parent / "received_images"
+            directory.mkdir(parents=True, exist_ok=True)
+            with Image.open(io.BytesIO(image_bytes)) as original:
+                extension = {"JPEG": ".jpg", "PNG": ".png", "WEBP": ".webp"}[original.format]
+            (directory / (result["image_sha256"] + extension)).write_bytes(image_bytes)
+            result["local_image_saved"] = True
+        except OSError:
+            log.exception("Local image copy failed; original is retained in MySQL")
+            result["local_image_saved"] = False
+
+        def infer(image):
+            model, device = get_ai_model()
+            return {"device": str(device), "results": predict(image, model, device)}
+
+        image_result = analyze_stored_image(database, metadata["device_id"],
+            metadata["session_id"], metadata["boot_id"], metadata["user_id"], infer)
+        result.update(image_status=image_result["image_status"], image_result=image_result["image_result"])
+    return result
+
+
+@app.post("/gyro", tags=["Real captures"])
+def receive_gyro(payload: GyroCapture):
+    return receive_real_capture(payload)
+
+
 @app.post("/ai/analyze")
 async def analyze_image(
-    file: UploadFile = File(...)
+    file: UploadFile = File(...),
+    metadata: str | None = Form(None),
 ):
+    if metadata is not None:
+        if len(metadata.encode("utf-8")) > 8 * 1024 * 1024:
+            raise HTTPException(413, "metadata_too_large")
+        try:
+            payload = OpticalCapture.model_validate_json(metadata)
+        except ValueError as exc:
+            raise HTTPException(422, "invalid_optical_metadata") from exc
+        image_bytes = await file.read(10 * 1024 * 1024 + 1)
+        if len(image_bytes) > 10 * 1024 * 1024:
+            raise HTTPException(413, "image_too_large")
+        capture = await run_in_threadpool(receive_real_capture, payload, image_bytes)
+        return {"filename": file.filename, **(capture.get("image_result") or {}), "capture": capture}
+
     if not file.content_type or not file.content_type.startswith(
         "image/"
     ):

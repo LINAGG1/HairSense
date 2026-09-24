@@ -120,3 +120,88 @@ GET analysis로 최신 feedback과 이력을 확인합니다. 기존 complete �
 
 고정 모델의 기존 파일 요약 재현, 결측/식별자 불일치, 중복 요청, 중단 상태, 공급자 실패를 검사합니다.
 DB 상태 흐름과 외부 호출은 모의 처리합니다. 실제 SQL 적용/권한/서버 연결은 위 실행 절차로 확인해야 합니다.
+
+## 실제 ESP32 SW1 / SW2 수신
+
+`migration_real_capture.sql`을 Workbench 관리자 연결에서 한 번 실행합니다.
+기존 sensor_sessions, sensor_analysis_runs, sensor_readings는 재사용하고,
+sensor_capture_images만 추가합니다. 앱 계정이 hairsense_app@localhost와 다르면
+SQL의 GRANT 대상을 실제 앱 계정에 맞춥니다. 이미지 BLOB을 저장하므로
+max_allowed_packet은 전송 이미지와 SQL 부가 데이터를 수용해야 합니다.
+
+서버를 실행하는 PowerShell에서 한 기기와 사용자를 지정하고 재시작합니다.
+
+```powershell
+$env:HAIRSENSE_REAL_DEVICE_ID = "esp32-device-001"
+$env:HAIRSENSE_REAL_USER_ID = "real-user-001"
+..\.venv\Scripts\python.exe -m uvicorn app:app --host 0.0.0.0 --port 8000
+```
+
+위 값은 예시입니다. 테스트하는 실제 기기와 사용자를 계속 같은 ID에 연결하세요.
+현재 펌웨어에는 기기/사용자 ID가 없으므로 이 설정은 한 기기·한 사용자 전용입니다.
+여러 기기를 연결하거나 사용자를 바꾸기 전에 식별자·인증 전송 규격을 추가해야 합니다.
+IP나 boot_id로 기기를 추측하지 않습니다. ID 쿼리 검사는 사용자 인증이 아닙니다.
+
+- SW1: POST /ai/analyze, multipart의 `file`에 JPG, `metadata`에 전자팀 JSON 문자열.
+  optical 배열을 읽으며 gyro_x/y/z는 null이어야 합니다.
+- SW2: POST /gyro, JSON의 gyro 배열. optical은 null이어야 합니다.
+- metadata 없는 기존 이미지 단독 요청도 그대로 동작합니다. 단독 요청은 기존처럼
+  로컬 이미지 저장과 모델 분석만 수행하며 새 묶음 DB 저장 대상은 아닙니다.
+
+이미지 모델 파일과 예측 함수는 변경하지 않았습니다. SW1에서는 이미지 바이너리만
+기존 모델로 전달하며 광학 값은 별도 센서 처리에 사용합니다.
+SW1 이미지 원본은 DB의 image_bytes(LONGBLOB)와 received_images에 저장합니다.
+로컬 복사 실패 시에도 이미 커밋한 DB 원본은 남고 local_image_saved=false를 반환합니다.
+이미지 분석 결과는 image_result_json에 저장하며 image_status=completed로 확인합니다.
+추론 실패는 image_status=failed로 기록하고 원본을 보존합니다.
+
+묶음 원본 JSON은 sensor_sessions.metadata_json의 wire_payload에 보존합니다.
+각 샘플은 sensor_readings에 is_synthetic=false로 저장합니다.
+전자팀 seq는 묶음 순번이므로 DB 샘플 seq에는 1부터 서버 순번을 부여합니다.
+이 순번으로 누락 패킷 수를 계산하면 안 됩니다.
+세션 이름은 SW1 real-optical-{묶음 seq}, SW2 real-gyro-{묶음 seq}이며,
+device_id + session_id + boot_id 전체로 식별합니다. 같은 부팅 중 seq를 재사용하지 마세요.
+동일 묶음 재전송은 cached=true, 같은 키의 다른 내용은 HTTP 409입니다.
+
+센서 처리: 유한 수/시간 증가 검증 → 첫 샘플 기준 2초 창 → 측정 채널별
+유효값 수·null 수·평균·표준편차(ddof=0) 계산 → sensor_analysis_runs 저장.
+0은 유효하고 null은 채우지 않습니다. SW1 자이로/SW2 광학은 미측정 채널입니다.
+20ms 간격에서 벗어난 횟수와 부분 창도 기록합니다. 부분/불규칙 창의 통계는
+참고용이며 complete_regular_window=false입니다. 표본이 없는 창은 생성하지 않습니다.
+실제 버튼 시작/종료 시각은 알 수 없으므로 내부 끝 시각은 마지막 샘플+20ms로
+추정했다는 출처를 저장합니다. envelope timestamp_ms는 원문에 보존합니다.
+현재 한 묶음 1~30000샘플, 추정 관측 구간 600초 이하, 이미지 10MiB 이하입니다.
+
+실측 Baseline과 급변 임계값은 아직 없으므로 status=awaiting_real_baseline,
+anomaly_score=null, feedback=null입니다. 가상 모델이나 Gemini를 호출하지 않습니다.
+실측 평균·표준편차 저장 성공을 개인 이상치 판정 완료로 해석하지 마세요.
+
+전송 후 기존 GET /sensor-sessions/{session_id}/analysis에서
+device_id, user_id, boot_id를 넣어 저장된 센서 특징을 조회할 수 있습니다.
+문서상 이 GET은 기존 Sensor DB pipeline (synthetic) 그룹에 있지만 실측 저장 결과도 조회합니다.
+실측에는 가상 데이터용 complete나 feedback/retry를 호출하지 않습니다.
+
+Workbench 저장 확인:
+
+```sql
+USE hairsense_demo;
+SELECT device_id,session_id,boot_id,COUNT(*) AS samples
+FROM sensor_readings WHERE is_synthetic=0
+GROUP BY device_id,session_id,boot_id;
+
+SELECT device_id,session_id,boot_id,image_status,
+       OCTET_LENGTH(image_bytes) AS image_size,image_result_json
+FROM sensor_capture_images;
+
+SELECT device_id,session_id,boot_id,status,result_json
+FROM sensor_analysis_runs WHERE pipeline_version='real_capture_1';
+```
+
+수신/DB 트랜잭션/재전송/이미지 실패/HTTP 규격 검사:
+
+```powershell
+..\.venv\Scripts\python.exe -m unittest test_real_capture_storage test_sensor_pipeline
+```
+
+자동 검사는 DB와 이미지 모델을 모의 처리합니다. 실제 기기 → MySQL → 이미지 모델의
+동작 확인은 SQL 적용과 서버 재시작 후 SW1/SW2 전송으로 별도 확인해야 합니다.
