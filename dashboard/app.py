@@ -1,10 +1,52 @@
 import streamlit as st
 import pandas as pd
 import matplotlib.pyplot as plt
+import requests
+import os
+from dotenv import load_dotenv
+from datetime import datetime
 
+load_dotenv()
+
+API_BASE_URL = os.getenv("API_BASE_URL")
+
+if not API_BASE_URL:
+    st.error("API 서버 주소가 설정되지 않았습니다.")
+    st.stop()
+
+SESSION_ID = "test-session-001"
+DEVICE_ID = "hairsense-001"
+BOOT_ID = "boot-001"
+USER_ID = "user-001"
+
+def get_analysis_result():
+    url = f"{API_BASE_URL}/sensor-sessions/{SESSION_ID}/analysis"
+
+    params = {
+        "device_id": DEVICE_ID,
+        "boot_id": BOOT_ID,
+        "user_id": USER_ID,
+    }
+
+    try:
+        response = requests.get(
+            url,
+            params=params,
+            timeout=10,
+        )
+
+        response.raise_for_status()
+
+        return response.json()
+
+    except requests.exceptions.RequestException as e:
+        st.error(f"분석 결과를 가져오지 못했습니다: {e}")
+        return None
 
 plt.rcParams["font.family"] = "Malgun Gothic"
 plt.rcParams["axes.unicode_minus"] = False 
+
+
 # ============================================================
 # Page
 # ============================================================
@@ -163,70 +205,6 @@ st.markdown(
 )
 
 
-# ============================================================
-# Mock Data
-# ============================================================
-
-previous_result = {
-    "미세각질": 1,
-    "피지과다": 1,
-    "모낭사이홍반": 2,
-    "모낭홍반/농포": 1,
-    "비듬": 2,
-    "탈모": 1,
-}
-
-today_result = {
-    "미세각질": 2,
-    "피지과다": 1,
-    "모낭사이홍반": 2,
-    "모낭홍반/농포": 2,
-    "비듬": 1,
-    "탈모": 1,
-}
-
-severity_names = [
-    "양호",
-    "경증",
-    "중등도",
-    "중증",
-]
-
-
-# ============================================================
-# 센서 Mock
-# ============================================================
-
-sensor_snapshot = {
-    "광학 반사": 412,
-    "압력": 723,
-    "빗질 움직임": "변화 큼",
-}
-
-sensor_baseline = {
-    "광학 반사": 390,
-    "압력": 680,
-    "빗질 움직임": "일정",
-}
-
-
-# ============================================================
-# Gemini Mock
-# ============================================================
-
-gemini_feedback = [
-    (
-        "유분 변화",
-        "오늘 두피의 광학 반사 특성이 평소보다 높게 측정됐어요. "
-        "평소보다 유분이 증가했을 가능성이 있습니다.",
-    ),
-    (
-        "빗질 움직임",
-        "오늘의 빗질은 평소보다 움직임의 변화가 컸어요. "
-        "조금 더 일정한 움직임으로 빗어보세요.",
-    ),
-]
-
 
 # ============================================================
 # Session State
@@ -234,6 +212,9 @@ gemini_feedback = [
 
 if "measurement_done" not in st.session_state:
     st.session_state.measurement_done = False
+
+if "analysis_result" not in st.session_state:
+    st.session_state.analysis_result = None
 
 
 # ============================================================
@@ -317,11 +298,20 @@ if not st.session_state.measurement_done:
             type="primary",
             use_container_width=True,
         ):
-            st.session_state.measurement_done = True
-            st.rerun()
+            result = get_analysis_result()
+
+            if result is not None:
+                st.session_state.analysis_result = result
+                st.session_state.measurement_done = True
+                st.rerun()
 
 
 else:
+    analysis_result = st.session_state.analysis_result
+
+    if analysis_result is None:
+        st.error("분석 결과가 없습니다.")
+        st.stop()
 
     # ====================================================
     # 측정 후 화면
@@ -347,6 +337,7 @@ else:
             use_container_width=True,
         ):
             st.session_state.measurement_done = False
+            st.session_state.analysis_result = None
             st.rerun()
 
     st.markdown(
@@ -450,7 +441,7 @@ else:
 
     with right_col:
 
-        st.subheader(
+        """st.subheader(
             "📊 촬영 당시 센서 상태"
         )
 
@@ -487,7 +478,23 @@ else:
             st.metric(
                 "빗질 움직임",
                 sensor_snapshot["빗질 움직임"],
-            )
+            )"""
+
+        st.subheader("📊 촬영 당시 센서 상태")
+
+        optical_data = (
+            analysis_result
+            .get("summary", {})
+            .get("sensors", {})
+            .get("optical", {})
+        )
+
+        st.write("광학 센서 분석 결과")
+
+        if optical_data:
+            st.json(optical_data)
+        else:
+            st.info("광학 센서 분석 결과가 없습니다.")
 
 
         st.divider()
@@ -496,11 +503,7 @@ else:
         # 평소와 비교 - 막대그래프
         # ====================================================
 
-                # ====================================================
-        # 평소와 비교 - 막대그래프
-        # ====================================================
-
-        st.subheader(
+        """st.subheader(
             "🧠 평소와 비교"
         )
 
@@ -617,7 +620,7 @@ else:
 
         st.caption(
             "양호 0 · 경증 1 · 중등도 2 · 중증 3"
-        )
+        )"""
 
 
         st.divider()
@@ -627,7 +630,7 @@ else:
         # 오늘의 안내
         # ====================================================
 
-        st.subheader(
+        """st.subheader(
             "💡 오늘의 안내"
         )
 
@@ -643,7 +646,15 @@ else:
 
                 st.write(
                     message
-                )
+                )"""
+        st.subheader("💡 오늘의 안내")
+
+        feedback = analysis_result.get("feedback")
+
+        if feedback:
+            st.json(feedback)
+        else:
+            st.info("현재 안내 결과가 없습니다.")
 
 
         st.divider()
@@ -662,4 +673,4 @@ else:
             st.success("센서 수신")
 
         with status_col3:
-            st.success("AI 분석 완료")
+            st.success("센서 분석 완료")
