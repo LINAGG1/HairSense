@@ -3,6 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import requests
 import os
+import glob
 from dotenv import load_dotenv
 from datetime import datetime
 
@@ -14,10 +15,10 @@ if not API_BASE_URL:
     st.error("API 서버 주소가 설정되지 않았습니다.")
     st.stop()
 
-SESSION_ID = "test-session-001"
-DEVICE_ID = "hairsense-001"
-BOOT_ID = "boot-001"
-USER_ID = "user-001"
+SESSION_ID = os.getenv("SESSION_ID", "test-session-001")
+DEVICE_ID = os.getenv("DEVICE_ID", "hairsense-001")
+BOOT_ID = os.getenv("BOOT_ID", "boot-001")
+USER_ID = os.getenv("USER_ID", "user-001")
 
 def get_analysis_result():
     url = f"{API_BASE_URL}/sensor-sessions/{SESSION_ID}/analysis"
@@ -42,6 +43,44 @@ def get_analysis_result():
     except requests.exceptions.RequestException as e:
         st.error(f"분석 결과를 가져오지 못했습니다: {e}")
         return None
+    
+def get_latest_image():
+    """
+    FastAPI가 received_images에 저장한
+    가장 최근 촬영 이미지를 가져옵니다.
+    """
+
+    image_dir = os.path.join(
+        os.path.dirname(os.path.abspath(__file__)),
+        "received_images",
+    )
+
+    image_extensions = [
+        "*.jpg",
+        "*.jpeg",
+        "*.png",
+        "*.webp",
+    ]
+
+    image_files = []
+
+    for extension in image_extensions:
+        image_files.extend(
+            glob.glob(
+                os.path.join(image_dir, extension)
+            )
+        )
+
+    if not image_files:
+        return None
+
+    # 가장 최근에 생성/수정된 이미지
+    latest_image = max(
+        image_files,
+        key=os.path.getmtime,
+    )
+
+    return latest_image
 
 plt.rcParams["font.family"] = "Malgun Gothic"
 plt.rcParams["axes.unicode_minus"] = False 
@@ -210,11 +249,14 @@ st.markdown(
 # Session State
 # ============================================================
 
-if "measurement_done" not in st.session_state:
-    st.session_state.measurement_done = False
-
-if "analysis_result" not in st.session_state:
+if "measurement_done" not in st.session_state: 
+    st.session_state.measurement_done = False 
+ 
+if "analysis_result" not in st.session_state: 
     st.session_state.analysis_result = None
+
+if "image_path" not in st.session_state:
+    st.session_state.image_path = None
 
 
 # ============================================================
@@ -290,21 +332,38 @@ if not st.session_state.measurement_done:
         )
 
         # ----------------------------------------------------
-        # 테스트 측정 시작
+        # 실제 측정 상태 확인
         # ----------------------------------------------------
 
         if st.button(
-            "테스트 측정 시작",
+            "측정 결과 확인",
             type="primary",
             use_container_width=True,
         ):
+
+            # 서버에서 센서 분석 결과 가져오기
             result = get_analysis_result()
 
-            if result is not None:
-                st.session_state.analysis_result = result
-                st.session_state.measurement_done = True
-                st.rerun()
+            # 실제 촬영 이미지 확인
+            image_path = get_latest_image()
 
+            if result is None:
+                st.warning("아직 센서 분석 결과가 없습니다.")
+
+            elif image_path is None:
+                st.warning("아직 촬영된 두피 이미지가 없습니다.")
+
+            else:
+                # 분석 결과 저장
+                st.session_state.analysis_result = result
+
+                # 실제 이미지 경로 저장
+                st.session_state.image_path = image_path
+
+                # 측정 완료
+                st.session_state.measurement_done = True
+
+                st.rerun()
 
 else:
     analysis_result = st.session_state.analysis_result
@@ -338,6 +397,7 @@ else:
         ):
             st.session_state.measurement_done = False
             st.session_state.analysis_result = None
+            st.session_state.image_path = None
             st.rerun()
 
     st.markdown(
@@ -409,25 +469,26 @@ else:
 
             with image_center:
 
-                st.write("")
+                image_path = st.session_state.get("image_path")
 
-                st.markdown(
-                    "### 🪮"
-                )
+                if image_path and os.path.exists(image_path):
 
-                st.write(
-                    "두피 측정 이미지"
-                )
+                    st.image(
+                        image_path,
+                        caption="실제 ESP32 촬영 이미지",
+                        use_container_width=True,
+                    )
 
-                st.caption(
-                    "ESP32 카메라 촬영 이미지가 "
-                    "여기에 표시됩니다."
-                )
+                else:
 
+                    st.markdown(
+                        "### 🪮"
+                    )
 
-        st.caption(
-            "실제 서버 연결 후 촬영된 이미지가 표시됩니다."
-        )
+                    st.write(
+                        "두피 측정 이미지"
+                    )
+
 
         # 측정 완료 메시지
         st.success(
@@ -445,7 +506,7 @@ else:
             "📊 촬영 당시 센서 상태"
         )
 
-        sensor_col1, sensor_col2, sensor_col3 = st.columns(3)
+        sensor_col1, sensor_col2 = st.columns(2)
 
         with sensor_col1:
 
@@ -460,20 +521,8 @@ else:
                 f"+{optical_diff}",
             )
 
+
         with sensor_col2:
-
-            pressure_diff = (
-                sensor_snapshot["압력"]
-                - sensor_baseline["압력"]
-            )
-
-            st.metric(
-                "압력",
-                sensor_snapshot["압력"],
-                f"+{pressure_diff}",
-            )
-
-        with sensor_col3:
 
             st.metric(
                 "빗질 움직임",
@@ -496,6 +545,20 @@ else:
         else:
             st.info("광학 센서 분석 결과가 없습니다.")
 
+
+        gyro_data = (
+            analysis_result
+            .get("summary", {})
+            .get("sensors", {})
+            .get("gyro", {})
+        )
+
+        st.write("자이로 센서 분석 결과")
+
+        if gyro_data:
+            st.json(gyro_data)
+        else:
+            st.info("자이로 센서 분석 결과가 없습니다.")
 
         st.divider()
 
