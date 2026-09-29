@@ -134,6 +134,99 @@ def get_ai_model():
 
     return _ai_model, _ai_device
 
+# ---------------------------------------------------------
+# Image analysis DB
+# ---------------------------------------------------------
+
+def save_image_analysis(
+    user_id: str,
+    session_id: str | None,
+    results: list[dict],
+):
+    result_map = {
+        item["label"]: item
+        for item in results
+    }
+
+    required_labels = [
+        "미세각질",
+        "피지과다",
+        "모낭사이홍반",
+        "모낭홍반/농포",
+        "비듬",
+        "탈모",
+    ]
+
+    for label in required_labels:
+        if label not in result_map:
+            raise ValueError(
+                f"Missing AI result: {label}"
+            )
+
+    values = (
+        user_id,
+        session_id,
+
+        result_map["미세각질"]["grade"],
+        result_map["미세각질"]["confidence"],
+
+        result_map["피지과다"]["grade"],
+        result_map["피지과다"]["confidence"],
+
+        result_map["모낭사이홍반"]["grade"],
+        result_map["모낭사이홍반"]["confidence"],
+
+        result_map["모낭홍반/농포"]["grade"],
+        result_map["모낭홍반/농포"]["confidence"],
+
+        result_map["비듬"]["grade"],
+        result_map["비듬"]["confidence"],
+
+        result_map["탈모"]["grade"],
+        result_map["탈모"]["confidence"],
+    )
+
+    with database() as connection, connection.cursor() as cursor:
+        cursor.execute(
+            """
+            INSERT INTO image_analysis_results (
+                user_id,
+                session_id,
+
+                micro_scale_grade,
+                micro_scale_confidence,
+
+                excess_sebum_grade,
+                excess_sebum_confidence,
+
+                perifollicular_erythema_grade,
+                perifollicular_erythema_confidence,
+
+                follicular_erythema_pustule_grade,
+                follicular_erythema_pustule_confidence,
+
+                dandruff_grade,
+                dandruff_confidence,
+
+                hair_loss_grade,
+                hair_loss_confidence
+            )
+            VALUES (
+                %s, %s,
+                %s, %s,
+                %s, %s,
+                %s, %s,
+                %s, %s,
+                %s, %s,
+                %s, %s
+            )
+            """,
+            values,
+        )
+
+        connection.commit()
+
+        return cursor.lastrowid
 
 # ---------------------------------------------------------
 # Health
@@ -406,8 +499,87 @@ async def analyze_image(
             "AI 이미지 분석에 실패했습니다."
         )
 
+    # -----------------------------------------------------
+    # AI 분석 결과 MySQL 저장
+    # -----------------------------------------------------
+
+    try:
+        image_result_id = save_image_analysis(
+            user_id="user-001",
+            session_id="real-session-001",
+            results=results,
+        )
+
+    except Exception:
+        log.exception("Failed to save image analysis result")
+
+        raise HTTPException(
+            500,
+            "AI 분석 결과 저장에 실패했습니다."
+        )
+
     return {
         "filename": file.filename,
         "device": str(device),
         "results": results,
+        "image_result_id": image_result_id,
+    }
+
+# ---------------------------------------------------------
+# Image history API
+# ---------------------------------------------------------
+
+@app.get("/ai/history")
+def get_image_history(
+    limit: int = Query(30, ge=1, le=100),
+):
+    user_id = "user-001"
+
+    with database() as connection, connection.cursor(
+        dictionary=True
+    ) as cursor:
+
+        cursor.execute(
+            """
+            SELECT
+                id,
+                user_id,
+                session_id,
+                measured_at,
+
+                micro_scale_grade,
+                micro_scale_confidence,
+
+                excess_sebum_grade,
+                excess_sebum_confidence,
+
+                perifollicular_erythema_grade,
+                perifollicular_erythema_confidence,
+
+                follicular_erythema_pustule_grade,
+                follicular_erythema_pustule_confidence,
+
+                dandruff_grade,
+                dandruff_confidence,
+
+                hair_loss_grade,
+                hair_loss_confidence
+
+            FROM image_analysis_results
+
+            WHERE user_id = %s
+
+            ORDER BY measured_at ASC
+
+            LIMIT %s
+            """,
+            (user_id, limit),
+        )
+
+        rows = cursor.fetchall()
+
+    return {
+        "user_id": user_id,
+        "count": len(rows),
+        "items": rows,
     }
