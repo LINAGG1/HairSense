@@ -30,6 +30,11 @@ def render_sensor(snapshot, sensor):
     if not data:
         st.info("아직 이 센서의 실제 측정 결과가 없습니다.")
         return
+    message = data.get("message") or ((snapshot or {}).get("feedback") or {}).get("messages", {}).get(sensor, {}).get("message")
+    if message:
+        st.write(message)
+    elif data["status"] == "completed":
+        st.info("한 줄 설명이 아직 제공되지 않았습니다. 센서 서버를 최신 코드로 재시작해 주세요.")
     st.caption(f"세션 {data['session_id']} · 부팅 {data['boot_id']} · 저장 {data.get('recorded_at', '')}")
     if data["status"] != "completed":
         st.info(STATUS.get(data["status"], data["status"]))

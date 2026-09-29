@@ -24,32 +24,30 @@ SENSOR_DEVICE_ID = os.getenv("HAIRSENSE_REAL_DEVICE_ID", DEVICE_ID)
 def get_analysis_result():
     return fetch_snapshot(API_BASE_URL, SENSOR_USER_ID, SENSOR_DEVICE_ID)
     
-def get_session_image():
+def get_session_image(snapshot):
     """Fetch the DB image belonging to the same session as the analysis."""
+    metadata = snapshot.get("captures", {}).get("optical", {}).get("metadata")
+    st.session_state.image_load_error = None
+    if not metadata:
+        return None
     try:
         response = requests.get(
-            f"{API_BASE_URL}/sensor-sessions/{SESSION_ID}/image",
-            params={"device_id": DEVICE_ID, "boot_id": BOOT_ID, "user_id": USER_ID},
+            f"{API_BASE_URL}/sensor-sessions/{metadata['session_id']}/image",
+            params={key: metadata[key] for key in ("device_id", "boot_id", "user_id")},
             timeout=10,
         )
+        if response.status_code == 404:
+            return None
         response.raise_for_status()
         if response.headers.get("Content-Type", "").split(";")[0] not in (
             "image/jpeg", "image/png", "image/webp"
         ) or not response.content:
-            st.error("서버에서 올바른 이미지를 반환하지 않았습니다.")
+            st.session_state.image_load_error = "서버에서 올바른 이미지를 반환하지 않았습니다."
             return None
         return response.content
-    except requests.exceptions.RequestException as e:
-        st.error(f"측정 세션의 이미지를 가져오지 못했습니다: {e}")
+    except requests.exceptions.RequestException:
+        st.session_state.image_load_error = "이미지를 불러오지 못했습니다. 센서 결과는 확인할 수 있습니다."
         return None
-
-    # 가장 최근에 생성/수정된 이미지
-    latest_image = max(
-        image_files,
-        key=os.path.getmtime,
-    )
-
-    return latest_image
 
 def get_image_history():
     try:
@@ -392,7 +390,7 @@ if not st.session_state.measurement_done:
 
         st.markdown(
             '<div class="pre-caption">'
-            '현재는 UI 테스트를 위해 아래 버튼으로 측정을 대신합니다.'
+            '측정이 끝나면 아래 버튼으로 저장된 결과를 확인해 주세요.'
             '</div>',
             unsafe_allow_html=True,
         )
@@ -412,16 +410,11 @@ if not st.session_state.measurement_done:
             # Preserve the clicked sensor snapshot independently of image availability.
             st.session_state.real_sensor_snapshot = result
 
-            # 분석 결과와 동일한 세션의 DB 이미지 조회
-            image_bytes = get_session_image() if result is not None else None
-
-            if result is None:
+            if not result or not result.get("summary", {}).get("sensors"):
                 st.warning("아직 센서 분석 결과가 없습니다.")
-
-            elif image_bytes is None:
-                st.warning("해당 측정 세션의 이미지를 불러오지 못했습니다.")
-
             else:
+                # An optional image never blocks the completed sensor screen.
+                image_bytes = get_session_image(result)
                 # 분석 결과 저장
                 st.session_state.analysis_result = result
 
@@ -466,6 +459,8 @@ else:
             st.session_state.measurement_done = False
             st.session_state.analysis_result = None
             st.session_state.image_bytes = None
+            st.session_state.real_sensor_snapshot = None
+            st.session_state.image_load_error = None
             st.rerun()
 
     st.markdown(
@@ -506,19 +501,9 @@ else:
             st.subheader("📷 측정 이미지")
 
         with image_time_col:
-            st.markdown(
-                """
-                <div style="
-                    font-size: 1.5rem;
-                    font-weight: 400;
-                    margin-top: 2.00rem;
-                    white-space: nowrap;
-                ">
-                    측정 시각 · 2026.09.24 09:20
-                </div>
-                """,
-                unsafe_allow_html=True,
-            )
+            optical_record = analysis_result.get("summary", {}).get("sensors", {}).get("optical", {})
+            if optical_record.get("recorded_at"):
+                st.caption(f"광학 측정 저장 · {optical_record['recorded_at']} (UTC)")
 
 
         # 이미지 박스
@@ -548,14 +533,7 @@ else:
                     )
 
                 else:
-
-                    st.markdown(
-                        "### 🪮"
-                    )
-
-                    st.write(
-                        "두피 측정 이미지"
-                    )
+                    st.info(st.session_state.get("image_load_error") or "이번 측정에서 수신된 이미지가 없습니다.")
 
 
         # 측정 완료 메시지
@@ -760,7 +738,7 @@ else:
         feedback = analysis_result.get("feedback")
 
         if feedback:
-            st.json(feedback)
+            st.write(feedback.get("notice", "센서별 분석 결과를 확인해 주세요."))
         else:
             st.info("현재 안내 결과가 없습니다.")
 
@@ -775,24 +753,20 @@ else:
         status_col1, status_col2, status_col3 = st.columns(3)
 
         with status_col1:
-            st.success("촬영 완료")
+            if st.session_state.get("image_bytes"):
+                st.success("이미지 수신")
+            else:
+                st.info("이미지 없음")
 
         with status_col2:
             st.success("센서 수신")
 
         with status_col3:
-            st.success("센서 분석 완료")
+            sensor_statuses = [row["status"] for row in analysis_result.get("summary", {}).get("sensors", {}).values()]
+            if sensor_statuses and all(status == "completed" for status in sensor_statuses):
+                st.success("센서 분석 완료")
+            else:
+                st.info("센서별 수집·분석 상태를 확인해 주세요.")
 
-
-# Sensor-only captures remain visible even when the existing image flow cannot open.
-if not st.session_state.measurement_done:
-    snapshot = st.session_state.get("real_sensor_snapshot")
-    if snapshot is not None:
-        st.subheader("📊 실제 센서 분석")
-        optical_column, gyro_column = st.columns(2)
-        with optical_column:
-            render_sensor(snapshot, "optical")
-        with gyro_column:
-            render_sensor(snapshot, "gyro")
 
 calibration_controls(API_BASE_URL, SENSOR_USER_ID, SENSOR_DEVICE_ID)
