@@ -2,7 +2,7 @@ import copy
 import unittest
 
 from real_sensor_feedback import with_real_feedback
-from sensor_feedback import select_finding
+from sensor_feedback import FACTS, select_finding
 
 
 def capture(sensor="optical", values=(10, 10), flagged=(False, False)):
@@ -31,12 +31,13 @@ class RealFeedbackTests(unittest.TestCase):
                 self.assertEqual(original, before)
                 self.assertEqual(result["scores"], before["scores"])
                 self.assertEqual(result["compared_baseline"], before["compared_baseline"])
-                self.assertIn("유분 상태 참고", result["feedback"]["messages"]["optical"]["message"])
+                self.assertEqual(FACTS[expected], result["feedback"]["messages"]["optical"]["message"])
 
     def test_gyro_does_not_invent_rapid_event_counts(self):
         for flags, expected in [((True, False), "gyro_pattern"), ((False, False), "gyro_unflagged")]:
             result = with_real_feedback(capture("gyro", flagged=flags))
             self.assertEqual(result["summary"]["sensors"]["gyro"]["finding"], expected)
+            self.assertEqual(result["summary"]["sensors"]["gyro"]["message"], FACTS[expected])
             self.assertNotIn("횟수", result["summary"]["sensors"]["gyro"]["message"])
         self.assertEqual(select_finding("gyro", 2, {"gyro_rapid_changes_increased": 1}), "gyro_rapid")
 
@@ -56,6 +57,13 @@ class RealFeedbackTests(unittest.TestCase):
         result = with_real_feedback(record)
         self.assertEqual(result["summary"]["sensors"]["optical"]["finding"], "optical_high")
         self.assertEqual(with_real_feedback(result), result)
+        old = copy.deepcopy(result)
+        old["feedback"]["version"] = "real_sensor_feedback_v1"
+        old["feedback"]["messages"]["optical"]["message"] = "유분 상태 참고: 이전 문구"
+        old["summary"]["sensors"]["optical"]["message"] = "유분 상태 참고: 이전 문구"
+        refreshed = with_real_feedback(old)
+        self.assertEqual(refreshed["summary"]["sensors"]["optical"]["message"], FACTS["optical_high"])
+        self.assertEqual(refreshed["scores"], old["scores"])
         record["features"] = []
         self.assertEqual(with_real_feedback(record)["summary"]["sensors"]["optical"]["finding"], "optical_pattern")
 
