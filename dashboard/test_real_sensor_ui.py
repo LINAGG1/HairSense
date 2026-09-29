@@ -55,8 +55,14 @@ class SensorUITests(unittest.TestCase):
             self.assertNotIn("센서 기준 조정 세션", [e.label for e in app.expander])
             self.assertNotIn("📊 촬영 당시 센서 상태", [e.value for e in app.subheader])
             self.assertFalse(any('st.subheader' in e.value for e in app.markdown))
-            self.assertIn("광학 센서 분석 결과", [m.value for m in app.markdown])
-            self.assertIn("자이로 센서 분석 결과", [m.value for m in app.markdown])
+            self.assertNotIn("광학 센서 분석 결과", [m.value for m in app.markdown])
+            self.assertNotIn("자이로 센서 분석 결과", [m.value for m in app.markdown])
+            rendered = [(e.type, getattr(e, "value", None)) for e in app]
+            notice_index = rendered.index(("subheader", "💡 오늘의 안내"))
+            optical_index = rendered.index(("markdown", current["summary"]["sensors"]["optical"]["message"]))
+            gyro_index = rendered.index(("markdown", current["summary"]["sensors"]["gyro"]["message"]))
+            self.assertLess(notice_index, optical_index)
+            self.assertLess(optical_index, gyro_index)
             self.assertIn("이번 측정에서 수신된 이미지가 없습니다.", [m.value for m in app.info])
             self.assertNotIn("📊 실제 센서 분석", [m.value for m in app.subheader])
             for row in current["summary"]["sensors"].values():

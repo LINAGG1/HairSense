@@ -547,19 +547,6 @@ else:
     # ====================================================
 
     with right_col:
-
-
-
-        render_sensor(st.session_state.get("real_sensor_snapshot"), "optical")
-        render_sensor(st.session_state.get("real_sensor_snapshot"), "gyro")
-
-        st.divider()
-
-        # ====================================================
-        # 평소와 비교 - 막대그래프
-        # ====================================================
-
-
         st.subheader("📊 나의 두피 상태 변화")
         image_history = get_image_history()
         show_image_history_graph(image_history)
@@ -573,12 +560,8 @@ else:
 
         st.subheader("💡 오늘의 안내")
 
-        feedback = analysis_result.get("feedback")
-
-        if feedback:
-            st.write(feedback.get("notice", "센서별 분석 결과를 확인해 주세요."))
-        else:
-            st.info("현재 안내 결과가 없습니다.")
+        render_sensor(analysis_result, "optical")
+        render_sensor(analysis_result, "gyro")
 
 
         st.divider()

@@ -4,11 +4,11 @@ import streamlit as st
 
 
 STATUS = {
-    "baseline_created": "첫 baseline 생성 완료 — 다음 측정부터 비교합니다.",
-    "baseline_collecting": "baseline 수집 중 — 유효한 2초 구간이 2개 이상 필요합니다.",
-    "insufficient_data": "유효한 2초 구간이 없어 비교와 학습에서 제외했습니다.",
-    "baseline_required": "먼저 일반 측정으로 초기 baseline을 만들어 주세요.",
-    "calibration_completed": "별도 기준 조정 완료 — 다음 측정부터 조정된 임계값을 사용합니다.",
+    "baseline_created": "개인 기준이 만들어졌어요. 다음 측정부터 평소와 비교해 드려요.",
+    "baseline_collecting": "평소 상태를 파악하고 있어요. 측정 기록이 조금 더 필요해요.",
+    "insufficient_data": "측정 데이터가 부족해 이번 결과는 비교하기 어려워요.",
+    "baseline_required": "평소와 비교하려면 먼저 측정 기록을 쌓아 주세요.",
+    "calibration_completed": "개인 기준 조정이 완료됐어요. 다음 측정부터 적용돼요.",
 }
 
 
@@ -24,16 +24,15 @@ def fetch_snapshot(api_url, user_id, device_id):
 
 
 def render_sensor(snapshot, sensor):
-    title = "광학 센서 분석 결과" if sensor == "optical" else "자이로 센서 분석 결과"
-    st.write(title)
     data = (snapshot or {}).get("summary", {}).get("sensors", {}).get(sensor)
     if not data:
-        st.info("아직 이 센서의 실제 측정 결과가 없습니다.")
+        st.write("아직 광학 측정 결과가 없습니다." if sensor == "optical" else "아직 움직임 측정 결과가 없습니다.")
+        return
+    if data.get("status") in STATUS:
+        st.write(STATUS[data["status"]])
         return
     message = data.get("message") or ((snapshot or {}).get("feedback") or {}).get("messages", {}).get(sensor, {}).get("message")
     if message:
         st.write(message)
-    elif data["status"] == "completed":
-        st.info("한 줄 설명이 아직 제공되지 않았습니다. 센서 서버를 최신 코드로 재시작해 주세요.")
-    elif data["status"] in STATUS:
-        st.info(STATUS[data["status"]])
+    else:
+        st.write("이번 측정의 결과 안내가 아직 준비되지 않았어요.")
