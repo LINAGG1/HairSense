@@ -240,4 +240,20 @@ def main():
 
 
 if __name__ == "__main__":
-    main()
+    import argparse
+    from pathlib import Path
+
+    parser = argparse.ArgumentParser(description="Synthetic experiment or real sensor training")
+    parser.add_argument("--real-dataset", type=Path,
+                        help="Directory containing a real manifest.json and session folders")
+    parser.add_argument("--output", type=Path, help="New output directory for a real run")
+    args = parser.parse_args()
+    if args.real_dataset:
+        if args.output is None:
+            parser.error("--real-dataset requires --output")
+        from analyze_real_sessions import run
+        run(args.real_dataset, args.output)
+    else:
+        if args.output is not None:
+            parser.error("--output requires --real-dataset")
+        main()
