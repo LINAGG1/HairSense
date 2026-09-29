@@ -28,7 +28,7 @@ DB에서 내보낸 센서 원본을 세션 폴더마다 `sensor_readings.jsonl`�
 
 - 광학은 `sensor: "optical"`로 별도 실행합니다. 한 실행은 한 사용자·장치 기준입니다.
 - 메타데이터에는 ID들, `is_synthetic: false`, `schema_version: 1`, `sample_rate_hz: 50`,
-  `start_timestamp_ms`, `end_timestamp_ms`, `sample_type`(`gyro` 또는 `camera_optical`),
+  `start_timestamp_ms`, `end_timestamp_ms`, `sample_type`(`gyro`, `optical` 또는 기존 `camera_optical`),
   해당 단위(`gyro_unit: "deg/s"` 또는 `optical_unit: "V"`)가 필요합니다.
 - 정상으로 확인한 세션만 train/calibration에 넣으세요. `baseline_normal`은 확인 사실의 기록이며 자동 판정이 아닙니다.
 - `session_order`는 실제 수집 순서입니다. train → calibration → test 순서로 나눕니다.

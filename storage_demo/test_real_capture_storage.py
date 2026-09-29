@@ -203,6 +203,8 @@ class CaptureStorageTests(unittest.TestCase):
             "method": "POST", "scheme": "http", "path": path, "raw_path": path.encode(),
             "query_string": b"", "root_path": "", "headers": [(b"content-type", content_type.encode())],
             "client": ("127.0.0.1", 1), "server": ("testserver", 80)}, receive, send)
+        self.response_body = json.loads(b"".join(m.get("body", b"") for m in messages
+                                              if m["type"] == "http.response.body"))
         return next(m["status"] for m in messages if m["type"] == "http.response.start")
 
     def test_actual_multipart_and_json_routes(self):
@@ -214,15 +216,100 @@ class CaptureStorageTests(unittest.TestCase):
             self.assertEqual(asyncio.run(self.post("/ai/analyze", body, "multipart/form-data; boundary=sample")), 200)
             self.assertIsInstance(receiver.call_args.args[0], storage.OpticalCapture)
             self.assertEqual(receiver.call_args.args[1], self.image)
+            self.assertEqual(asyncio.run(self.post("/optical", body, "multipart/form-data; boundary=sample")), 200)
+            self.assertIsInstance(receiver.call_args.args[0], storage.OpticalCapture)
+            self.assertEqual(receiver.call_args.args[1], self.image)
             self.assertEqual(asyncio.run(self.post("/gyro", self.wire(False).model_dump_json().encode(), "application/json")), 200)
             self.assertIsInstance(receiver.call_args.args[0], storage.GyroCapture)
             bad = body.replace(b'"sample_type":"camera_optical"', b'"sample_type":"invalid"')
             self.assertEqual(asyncio.run(self.post("/ai/analyze", bad, "multipart/form-data; boundary=sample")), 422)
+            detail = self.response_body["detail"]
+            self.assertEqual(detail["code"], "invalid_optical_metadata")
+            self.assertEqual(detail["errors"][0]["loc"], ["sample_type"])
+            self.assertNotIn("input", detail["errors"][0])
+
+    def test_json_without_camera_is_saved_and_replayed(self):
+        for sample_type in ("optical", "camera_optical"):
+            wire = self.wire().model_dump()
+            wire["sample_type"] = sample_type
+            for key in ("gyro_x", "gyro_y", "gyro_z"):
+                wire.pop(key)
+            for route in ("/ai/analyze", "/optical"):
+                connection, cursor, database, lock = self.connection([{"row_count": 0}])
+                with patch.dict(os.environ, HAIRSENSE_REAL_DEVICE_ID="device", HAIRSENSE_REAL_USER_ID="user"), \
+                     patch.object(api, "database", database), patch.object(storage, "session_lock", lock), \
+                     patch.object(storage, "register_session", return_value={"status": "receiving"}), \
+                     patch.object(api, "get_ai_model") as model:
+                    self.assertEqual(asyncio.run(self.post(route, json.dumps(wire).encode(), "application/json")), 200)
+                    self.assertEqual(self.response_body["reading_count"], 2)
+                    self.assertEqual(self.response_body["image_status"], "not_present")
+                    self.assertFalse(self.response_body["is_synthetic"])
+                    model.assert_not_called()
+                connection.commit.assert_called_once()
+                self.assertFalse(any("sensor_capture_images" in c.args[0] for c in cursor.execute.call_args_list))
+                meta, rows = self.normalize(storage.OpticalCapture(**wire))
+                digest = storage.validate_capture(meta, rows, None, Reading)[-1]
+                for stored_digest in (digest, "different"):
+                    connection, cursor, database, lock = self.connection([])
+                    with patch.object(storage, "session_lock", lock), patch.object(storage, "register_session", return_value={
+                            "status": "sealed", "metadata_json": {"payload_sha256": stored_digest}}):
+                        if stored_digest == digest:
+                            self.assertTrue(storage.store_real_capture(database, meta, rows, None, Reading)["cached"])
+                        else:
+                            with self.assertRaises(HTTPException) as error:
+                                storage.store_real_capture(database, meta, rows, None, Reading)
+                            self.assertEqual(error.exception.status_code, 409)
+
+    def test_optical_accepts_null_gyro_but_rejects_measured_gyro(self):
+        wire = self.wire().model_dump()
+        expected = storage.OpticalCapture(**wire).model_dump()
+        with patch.object(api, "receive_real_capture", return_value={"status": "stored"}) as receiver:
+            for route in ("/ai/analyze", "/optical"):
+                self.assertEqual(asyncio.run(self.post(route, json.dumps({**wire, "gyro": None}).encode(), "application/json")), 200)
+                self.assertEqual(receiver.call_args.args[0].model_dump(), expected)
+                receiver.reset_mock()
+                self.assertEqual(asyncio.run(self.post(route, json.dumps({**wire, "gyro": [{"gyro_x": 1}]}).encode(), "application/json")), 422)
+                self.assertEqual(self.response_body["detail"]["errors"][0]["loc"], ["gyro"])
+                receiver.assert_not_called()
+
+    def test_null_gyro_placeholder_preserves_replay_hash(self):
+        wire = self.wire().model_dump()
+        original_meta, original_rows = self.normalize(storage.OpticalCapture(**wire))
+        updated_meta, updated_rows = self.normalize(storage.OpticalCapture(**{**wire, "gyro": None}))
+        original_hash = storage.validate_capture(original_meta, original_rows, None, Reading)[-1]
+        updated_hash = storage.validate_capture(updated_meta, updated_rows, None, Reading)[-1]
+        self.assertEqual(original_hash, updated_hash)
+
+    def test_bad_optical_json_never_writes(self):
+        with patch.object(api, "receive_real_capture") as receiver:
+            for route in ("/ai/analyze", "/optical"):
+                for body in (b'{', b'{}', b'{"optical":[]}'):
+                    self.assertEqual(asyncio.run(self.post(route, body, "application/json")), 422)
+                    self.assertEqual(self.response_body["detail"]["code"], "invalid_optical_metadata")
+                self.assertEqual(asyncio.run(self.post(route, b'raw', "image/jpeg")), 415)
+            receiver.assert_not_called()
+
+    def test_openapi_documents_json(self):
+        for route in ("/ai/analyze", "/optical"):
+            content = api.app.openapi()["paths"][route]["post"]["requestBody"]["content"]
+            schema = content["application/json"]["schema"]
+            self.assertIn("optical", schema["required"])
+            self.assertIn("properties", schema["properties"]["optical"]["items"])
+
+    def test_optical_requires_metadata(self):
+        body = (b'--sample\r\nContent-Disposition: form-data; name="file"; filename="sample.png"\r\n'
+                b'Content-Type: image/png\r\n\r\n' + self.image + b'\r\n--sample--\r\n')
+        with patch.object(api, "receive_real_capture") as receiver, patch.object(api, "get_ai_model") as model:
+            self.assertEqual(asyncio.run(self.post("/optical", body, "multipart/form-data; boundary=sample")), 422)
+            self.assertEqual(self.response_body["detail"][0]["loc"], ["body", "metadata"])
+            receiver.assert_not_called()
+            model.assert_not_called()
 
     def test_legacy_image_only_route_still_uses_original_predictor(self):
         body = (b'--sample\r\nContent-Disposition: form-data; name="file"; filename="sample.png"\r\n'
                 b'Content-Type: image/png\r\n\r\n' + self.image + b'\r\n--sample--\r\n')
         with patch.object(api, "get_ai_model", return_value=("model", "cpu")), \
+             patch.object(api, "save_image_analysis", return_value=1), \
              patch.object(api, "predict", return_value=[]) as predictor, \
              patch.object(api.Path, "mkdir"), patch.object(api.Path, "write_bytes"), \
              patch.object(api, "receive_real_capture") as real:

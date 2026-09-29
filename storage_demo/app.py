@@ -8,10 +8,12 @@ from typing import Annotated, Literal
 from uuid import uuid4
 
 import mysql.connector
-from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Query, UploadFile, File, Form, Request
+from fastapi.exceptions import RequestValidationError
+from fastapi.responses import JSONResponse
 from starlette.concurrency import run_in_threadpool
 from PIL import Image, UnidentifiedImageError
-from pydantic import BaseModel, ConfigDict, Field, FiniteFloat
+from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, ValidationError
 
 from ai.hair_model import load_model, predict
 from sensor_analysis_api import router as sensor_analysis_router
@@ -23,6 +25,26 @@ from real_capture_storage import (OpticalCapture, GyroCapture, normalize_wire,
 app = FastAPI(title="HairSense local storage exercise")
 app.include_router(sensor_analysis_router)
 log = logging.getLogger(__name__)
+
+
+def validation_fields(errors):
+    # Never log uploaded images, raw sensor values, or the full request body.
+    return [{"loc": list(error["loc"]), "type": error["type"],
+             "msg": error["msg"]} for error in errors]
+
+
+@app.exception_handler(RequestValidationError)
+async def request_validation_error(request: Request, exc: RequestValidationError):
+    errors = validation_fields(exc.errors())
+    log.warning("Request validation failed path=%s content_type=%s fields=%s",
+                request.url.path, request.headers.get("content-type", ""), errors)
+    response = {"detail": errors}
+    if request.url.path in ("/optical", "/ai/analyze"):
+        response["hint"] = (
+            "Send application/json with optical samples (no image required), or "
+            "multipart/form-data with file=image and metadata=optical JSON text."
+        )
+    return JSONResponse(status_code=422, content=response)
 
 Identifier = Annotated[
     str,
@@ -381,6 +403,8 @@ def receive_real_capture(payload, image_bytes=None):
         metadata, rows = normalize_wire(payload)
         result = store_real_capture(database, metadata, rows, image_bytes, Reading)
     except ValueError as exc:
+        log.warning("Real capture validation failed: %s",
+                    validation_fields(exc.errors()) if isinstance(exc, ValidationError) else str(exc))
         raise HTTPException(422, "invalid_real_capture: check fields, timestamps and image") from exc
     if image_bytes is not None:
         # DB is authoritative. Local copy is a recoverable convenience cache.
@@ -410,18 +434,50 @@ def receive_gyro(payload: GyroCapture):
     return receive_real_capture(payload)
 
 
-@app.post("/ai/analyze")
+async def receive_optical_json(request: Request):
+    body = bytearray()
+    async for chunk in request.stream():
+        body.extend(chunk)
+        if len(body) > 8 * 1024 * 1024:
+            raise HTTPException(413, "metadata_too_large")
+    try:
+        payload = OpticalCapture.model_validate_json(bytes(body))
+    except ValidationError as exc:
+        errors = validation_fields(exc.errors())
+        log.warning("Optical JSON validation failed fields=%s", errors)
+        raise HTTPException(422, {"code": "invalid_optical_metadata", "errors": errors}) from exc
+    return await run_in_threadpool(receive_real_capture, payload)
+
+
+_optical_schema = OpticalCapture.model_json_schema()
+_optical_schema["properties"]["optical"]["items"] = _optical_schema.pop("$defs")["OpticalSample"]
+OPTICAL_REQUEST_DOC = {"requestBody": {"content": {"application/json": {
+    "schema": _optical_schema
+}}}}
+
+
+@app.post("/ai/analyze", openapi_extra=OPTICAL_REQUEST_DOC)
 async def analyze_image(
-    file: UploadFile = File(...),
+    request: Request,
+    file: UploadFile | None = File(None),
     metadata: str | None = Form(None),
 ):
+    content_type = request.headers.get("content-type", "").split(";", 1)[0].strip().lower()
+    if content_type == "application/json":
+        return await receive_optical_json(request)
+    if content_type != "multipart/form-data":
+        raise HTTPException(415, "Use application/json for optical samples or multipart/form-data for images")
+    if file is None:
+        raise HTTPException(422, [{"loc": ["body", "file"], "type": "missing", "msg": "Field required for multipart image upload"}])
     if metadata is not None:
         if len(metadata.encode("utf-8")) > 8 * 1024 * 1024:
             raise HTTPException(413, "metadata_too_large")
         try:
             payload = OpticalCapture.model_validate_json(metadata)
-        except ValueError as exc:
-            raise HTTPException(422, "invalid_optical_metadata") from exc
+        except ValidationError as exc:
+            errors = validation_fields(exc.errors())
+            log.warning("Optical metadata validation failed fields=%s", errors)
+            raise HTTPException(422, {"code": "invalid_optical_metadata", "errors": errors}) from exc
         image_bytes = await file.read(10 * 1024 * 1024 + 1)
         if len(image_bytes) > 10 * 1024 * 1024:
             raise HTTPException(413, "image_too_large")
@@ -527,6 +583,18 @@ async def analyze_image(
         "results": results,
         "image_result_id": image_result_id,
     }
+
+@app.post("/optical", tags=["Real captures"], openapi_extra=OPTICAL_REQUEST_DOC)
+async def receive_optical(
+    request: Request,
+    file: UploadFile | None = File(None),
+    metadata: str | None = Form(None),
+):
+    """OPT101 JSON without a camera, or a legacy optical + image capture."""
+    if request.headers.get("content-type", "").split(";", 1)[0].strip().lower() == "multipart/form-data" and metadata is None:
+        raise HTTPException(422, [{"loc": ["body", "metadata"], "type": "missing", "msg": "Field required"}])
+    return await analyze_image(request=request, file=file, metadata=metadata)
+
 
 # ---------------------------------------------------------
 # Image history API

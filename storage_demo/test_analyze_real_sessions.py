@@ -10,7 +10,7 @@ def fixture(sensor="gyro", session="s1"):
     meta = dict(device_id="device", user_id="user", session_id=session, boot_id="same-boot",
                 is_synthetic=False, schema_version=1, sample_rate_hz=50,
                 optical_unit="V", gyro_unit="deg/s", start_timestamp_ms=1000,
-                end_timestamp_ms=5000, sample_type="gyro" if sensor == "gyro" else "camera_optical")
+                end_timestamp_ms=5000, sample_type="gyro" if sensor == "gyro" else "optical")
     rows = [dict(schema_version=1, boot_id="same-boot", seq=i+1,
                  timestamp_ms=1000+i*20+(i % 2), optical=None,
                  gyro_x=None, gyro_y=None, gyro_z=None) for i in range(200)]

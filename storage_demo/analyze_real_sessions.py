@@ -37,7 +37,7 @@ def features(rows, meta, sensor):
         raise ValueError("Real schema version 1 metadata required")
     if meta.get("sample_rate_hz") != 50:
         raise ValueError("Real preprocessing currently supports 50 Hz only")
-    if meta.get("sample_type") != {"optical": "camera_optical", "gyro": "gyro"}[sensor]:
+    if meta.get("sample_type") not in {"optical": ("optical", "camera_optical"), "gyro": ("gyro",)}[sensor]:
         raise ValueError("Sensor/sample_type mismatch")
     if meta.get("optical_unit" if sensor == "optical" else "gyro_unit") != ("V" if sensor == "optical" else "deg/s"):
         raise ValueError("Unsupported sensor unit")

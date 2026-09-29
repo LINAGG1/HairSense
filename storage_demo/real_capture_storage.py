@@ -5,6 +5,7 @@ No synthetic model, synthetic preprocessing, or Gemini call is made here.
 import hashlib
 import io
 import os
+import logging
 import numpy as np
 from typing import Literal
 
@@ -34,14 +35,16 @@ class GyroSample(WireModel):
 
 class OpticalCapture(WireModel):
     schema_version: Literal[1]
-    sample_type: Literal["camera_optical"]
+    sample_type: Literal["optical", "camera_optical"] = "optical"
     boot_id: Identifier
     seq: int = Field(ge=0, le=18446744073709551615)
     timestamp_ms: int = Field(ge=0, le=18446744073709551615)
     optical: list[OpticalSample] = Field(min_length=1, max_length=30000)
-    gyro_x: None
-    gyro_y: None
-    gyro_z: None
+    # Unmeasured channel placeholder; exclude it to preserve existing replay hashes.
+    gyro: None = Field(default=None, exclude=True)
+    gyro_x: None = None
+    gyro_y: None = None
+    gyro_z: None = None
 
 
 class GyroCapture(WireModel):
@@ -59,9 +62,15 @@ def normalize_wire(payload):
     device = os.environ.get("HAIRSENSE_REAL_DEVICE_ID")
     user = os.environ.get("HAIRSENSE_REAL_USER_ID")
     if not device or not user:
+        missing = [name for name, value in (
+            ("HAIRSENSE_REAL_DEVICE_ID", device), ("HAIRSENSE_REAL_USER_ID", user)) if not value]
+        logging.getLogger(__name__).error(
+            "Real capture unavailable: missing %s. Start the server with start_server.ps1 "
+            "-DeviceId <device-id> -UserId <user-id> in storage_demo.", ", ".join(missing))
         raise HTTPException(503, "real_device_and_user_binding_required")
     wire = payload.model_dump()
-    samples = wire["optical" if wire["sample_type"] == "camera_optical" else "gyro"]
+    is_optical = wire["sample_type"] in ("optical", "camera_optical")
+    samples = wire["optical" if is_optical else "gyro"]
     timestamps = [s["timestamp_ms"] for s in samples]
     if any(b <= a for a, b in zip(timestamps, timestamps[1:])):
         raise ValueError("Sample timestamps must increase within one boot")
@@ -70,14 +79,14 @@ def normalize_wire(payload):
         row = dict(schema_version=1, boot_id=wire["boot_id"], seq=ordinal,
                    timestamp_ms=sample["timestamp_ms"], optical=None,
                    gyro_x=None, gyro_y=None, gyro_z=None)
-        if wire["sample_type"] == "camera_optical":
+        if is_optical:
             row["optical"] = sample["value"]
         else:
             row.update(sample)
         rows.append(row)
     metadata = CaptureMetadata(
         device_id=device, user_id=user,
-        session_id=f"real-{'optical' if wire['sample_type'] == 'camera_optical' else 'gyro'}-{wire['seq']}",
+        session_id=f"real-{'optical' if is_optical else 'gyro'}-{wire['seq']}",
         boot_id=wire["boot_id"], is_synthetic=False, schema_version=1,
         optical_unit="V", sample_rate_hz=50,
         start_timestamp_ms=timestamps[0], end_timestamp_ms=timestamps[-1] + 20,
@@ -88,7 +97,7 @@ def normalize_wire(payload):
 
 def describe_real_rows(metadata, rows):
     """Descriptive windows only. Never apply synthetic thresholds to real data."""
-    channels = ["optical"] if metadata["sample_type"] == "camera_optical" else ["gyro_x", "gyro_y", "gyro_z"]
+    channels = ["optical"] if metadata["sample_type"] in ("optical", "camera_optical") else ["gyro_x", "gyro_y", "gyro_z"]
     times = [r["timestamp_ms"] for r in rows]
     intervals = [b-a for a, b in zip(times, times[1:])]
     groups = {}
@@ -137,7 +146,7 @@ class CaptureMetadata(BaseModel):
     sample_rate_hz: Literal[50]
     start_timestamp_ms: int = Field(ge=0, le=18446744073709551615)
     end_timestamp_ms: int = Field(ge=0, le=18446744073709551615)
-    sample_type: Literal["camera_optical", "gyro"] = "camera_optical"
+    sample_type: Literal["optical", "camera_optical", "gyro"] = "camera_optical"
     wire_payload: dict | None = None
     interval_source: str = "provided"
 
@@ -162,9 +171,9 @@ def validate_capture(meta, readings, image_bytes, reading_type):
             raise ValueError("Sample outside capture interval")
     if any(b["seq"] <= a["seq"] or b["timestamp_ms"] <= a["timestamp_ms"] for a, b in zip(rows, rows[1:])):
         raise ValueError("Duplicate sequence or non-monotonic timestamps")
-    if metadata["sample_type"] == "gyro":
-        if image_bytes is not None:
-            raise ValueError("Gyro capture must not contain an image")
+    if metadata["sample_type"] == "gyro" and image_bytes is not None:
+        raise ValueError("Gyro capture must not contain an image")
+    if image_bytes is None:
         payload_hash = hashlib.sha256(json_text({"metadata": metadata, "readings": rows}).encode("utf-8")).hexdigest()
         return metadata, rows, None, None, payload_hash
     if not isinstance(image_bytes, bytes) or not 0 < len(image_bytes) <= 10 * 1024 * 1024:

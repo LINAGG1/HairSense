@@ -142,7 +142,10 @@ $env:HAIRSENSE_REAL_USER_ID = "real-user-001"
 여러 기기를 연결하거나 사용자를 바꾸기 전에 식별자·인증 전송 규격을 추가해야 합니다.
 IP나 boot_id로 기기를 추측하지 않습니다. ID 쿼리 검사는 사용자 인증이 아닙니다.
 
-- SW1: POST /ai/analyze, multipart의 `file`에 JPG, `metadata`에 전자팀 JSON 문자열.
+- SW1 (카메라 없음): POST /ai/analyze 또는 /optical, application/json의 optical 배열.
+  sample_type은 optical(기존 camera_optical도 허용), 미측정 gyro_x/y/z는 생략할 수 있습니다.
+  이미지 없이 원본과 센서 통계를 저장하고 image_status=not_present를 반환합니다.
+- SW1 (이미지 포함 호환 경로): POST /optical 또는 /ai/analyze, multipart의 `file`에 JPG, `metadata`에 전자팀 JSON 문자열.
   optical 배열을 읽으며 gyro_x/y/z는 null이어야 합니다.
 - SW2: POST /gyro, JSON의 gyro 배열. optical은 null이어야 합니다.
 - metadata 없는 기존 이미지 단독 요청도 그대로 동작합니다. 단독 요청은 기존처럼
