@@ -3,9 +3,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import requests
 import os
-import glob
 from dotenv import load_dotenv
-from datetime import datetime
 
 load_dotenv()
 
@@ -44,34 +42,23 @@ def get_analysis_result():
         st.error(f"분석 결과를 가져오지 못했습니다: {e}")
         return None
     
-def get_latest_image():
-    """
-    FastAPI가 received_images에 저장한
-    가장 최근 촬영 이미지를 가져옵니다.
-    """
-
-    image_dir = os.path.join(
-        os.path.dirname(os.path.abspath(__file__)),
-        "received_images",
-    )
-
-    image_extensions = [
-        "*.jpg",
-        "*.jpeg",
-        "*.png",
-        "*.webp",
-    ]
-
-    image_files = []
-
-    for extension in image_extensions:
-        image_files.extend(
-            glob.glob(
-                os.path.join(image_dir, extension)
-            )
+def get_session_image():
+    """Fetch the DB image belonging to the same session as the analysis."""
+    try:
+        response = requests.get(
+            f"{API_BASE_URL}/sensor-sessions/{SESSION_ID}/image",
+            params={"device_id": DEVICE_ID, "boot_id": BOOT_ID, "user_id": USER_ID},
+            timeout=10,
         )
-
-    if not image_files:
+        response.raise_for_status()
+        if response.headers.get("Content-Type", "").split(";")[0] not in (
+            "image/jpeg", "image/png", "image/webp"
+        ) or not response.content:
+            st.error("서버에서 올바른 이미지를 반환하지 않았습니다.")
+            return None
+        return response.content
+    except requests.exceptions.RequestException as e:
+        st.error(f"측정 세션의 이미지를 가져오지 못했습니다: {e}")
         return None
 
     # 가장 최근에 생성/수정된 이미지
@@ -352,8 +339,8 @@ if "measurement_done" not in st.session_state:
 if "analysis_result" not in st.session_state: 
     st.session_state.analysis_result = None
 
-if "image_path" not in st.session_state:
-    st.session_state.image_path = None
+if "image_bytes" not in st.session_state:
+    st.session_state.image_bytes = None
 
 
 # ============================================================
@@ -441,21 +428,21 @@ if not st.session_state.measurement_done:
             # 서버에서 센서 분석 결과 가져오기
             result = get_analysis_result()
 
-            # 실제 촬영 이미지 확인
-            image_path = get_latest_image()
+            # 분석 결과와 동일한 세션의 DB 이미지 조회
+            image_bytes = get_session_image() if result is not None else None
 
             if result is None:
                 st.warning("아직 센서 분석 결과가 없습니다.")
 
-            elif image_path is None:
-                st.warning("아직 촬영된 두피 이미지가 없습니다.")
+            elif image_bytes is None:
+                st.warning("해당 측정 세션의 이미지를 불러오지 못했습니다.")
 
             else:
                 # 분석 결과 저장
                 st.session_state.analysis_result = result
 
-                # 실제 이미지 경로 저장
-                st.session_state.image_path = image_path
+                # API에서 받은 이미지 원본 저장
+                st.session_state.image_bytes = image_bytes
 
                 # 측정 완료
                 st.session_state.measurement_done = True
@@ -494,7 +481,7 @@ else:
         ):
             st.session_state.measurement_done = False
             st.session_state.analysis_result = None
-            st.session_state.image_path = None
+            st.session_state.image_bytes = None
             st.rerun()
 
     st.markdown(
@@ -566,12 +553,12 @@ else:
 
             with image_center:
 
-                image_path = st.session_state.get("image_path")
+                image_bytes = st.session_state.get("image_bytes")
 
-                if image_path and os.path.exists(image_path):
+                if image_bytes:
 
                     st.image(
-                        image_path,
+                        image_bytes,
                         caption="실제 ESP32 촬영 이미지",
                         use_container_width=True,
                     )

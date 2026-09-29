@@ -23,3 +23,17 @@ GRANT SELECT, INSERT, UPDATE ON hairsense_demo.sensor_capture_images TO 'hairsen
 -- No change to the existing sensor/image-model tables or files.
 -- The configured server max_allowed_packet must accommodate image + JSON overhead.
 SHOW CREATE TABLE sensor_capture_images;
+
+
+SELECT session_id, boot_id, COUNT(*) AS samples
+FROM sensor_readings
+WHERE is_synthetic = 0
+GROUP BY session_id, boot_id;
+
+SELECT session_id, boot_id, image_status,
+       OCTET_LENGTH(image_bytes) AS image_size
+FROM sensor_capture_images;
+
+SELECT session_id, boot_id, status
+FROM sensor_analysis_runs
+WHERE pipeline_version = 'real_capture_1';sensor_capture_images
