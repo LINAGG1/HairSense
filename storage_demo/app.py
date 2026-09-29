@@ -518,6 +518,9 @@ async def analyze_image(
             "AI 분석 결과 저장에 실패했습니다."
         )
 
+    print("=========HERE=========")
+    print("Image_result_id = ", image_result_id)
+
     return {
         "filename": file.filename,
         "device": str(device),
