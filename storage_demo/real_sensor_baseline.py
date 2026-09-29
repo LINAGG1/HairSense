@@ -10,6 +10,7 @@ import sklearn
 
 from analyze_by_sensor import fit_sensor
 from analyze_real_sessions import CHANNELS, features
+from real_sensor_feedback import with_real_feedback
 
 VERSION = "real_online_mean_std_v1"
 
@@ -127,4 +128,4 @@ def advance(previous, rows, meta, sensor, role="measurement"):
             "difference": float(np.mean([r[key] for r in extracted])) - baseline["feature_mean"][key] if baseline else None,
         } for key in feature_keys(sensor)} if extracted else {},
     }}}
-    return state, result
+    return state, with_real_feedback(result)

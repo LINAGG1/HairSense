@@ -68,6 +68,17 @@ class FeedbackResult(StrictModel):
     messages: Messages
 
 
+def select_finding(sensor, flagged_windows, counts):
+    """Shared observation selection; callers provide source-specific evidence."""
+    if sensor == "optical":
+        high = counts.get("optical_mean_increased", 0)
+        low = counts.get("optical_mean_decreased", 0)
+        return "optical_mixed" if high and low else "optical_high" if high else "optical_low" if low else "optical_pattern" if flagged_windows else "optical_unflagged"
+    if sensor == "gyro":
+        return "gyro_rapid" if counts.get("gyro_rapid_changes_increased", 0) else "gyro_pattern" if flagged_windows else "gyro_unflagged"
+    raise ValueError("Unsupported sensor")
+
+
 def build_evidence(session):
     """개인/기기/세션 ID, 원시 데이터, 이미지 없이 수치 요약만 선택합니다."""
     if session.get("is_synthetic") is not True:
@@ -88,11 +99,7 @@ def build_evidence(session):
         counts = {key: reasons.get(key, 0) for key in allowed}
         if any(type(v) is not int or v < 0 for v in counts.values()) or sum(counts.values()) > selected["flagged_windows"]:
             raise ValueError("Invalid observation counts")
-        if sensor == "optical":
-            high, low = counts["optical_mean_increased"], counts["optical_mean_decreased"]
-            finding = "optical_mixed" if high and low else "optical_high" if high else "optical_low" if low else "optical_pattern" if selected["flagged_windows"] else "optical_unflagged"
-        else:
-            finding = "gyro_rapid" if counts["gyro_rapid_changes_increased"] else "gyro_pattern" if selected["flagged_windows"] else "gyro_unflagged"
+        finding = select_finding(sensor, selected["flagged_windows"], counts)
         evidence["sensors"][sensor] = {**selected, "rule_reason_windows": counts,
                                          "finding": finding, "fixed_fact": FACTS[finding]}
     return evidence

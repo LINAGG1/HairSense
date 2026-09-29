@@ -6,6 +6,7 @@ from fastapi import APIRouter, HTTPException
 from pydantic import BaseModel, ConfigDict
 
 from real_sensor_baseline import VERSION, advance, empty_state
+from real_sensor_feedback import NOTICE, VERSION as FEEDBACK_VERSION, with_real_feedback
 from sensor_pipeline import json_text
 from sensor_pipeline_api import Identifier, decode
 
@@ -66,7 +67,7 @@ def make_real_sensor_router(database):
             records = cursor.fetchall()
         sensors, captures = {}, {}
         for record in records:
-            result = decode(record["result_json"])
+            result = with_real_feedback(decode(record["result_json"]))
             sensor = record["sensor"]
             sensors[sensor] = {**result["summary"]["sensors"][sensor],
                                "recorded_at": str(record["created_at"])}
@@ -74,7 +75,11 @@ def make_real_sensor_router(database):
         return {"mode": "real_online_analysis", "pipeline_version": VERSION,
                 "status": "available" if sensors else "awaiting_first_capture",
                 "summary": {"user_id": user_id, "device_id": device_id, "sensors": sensors},
-                "captures": captures}
+                "captures": captures,
+                "feedback": {"source": "rules", "is_synthetic": False,
+                    "version": FEEDBACK_VERSION, "notice": NOTICE,
+                    "messages": {sensor: result["feedback"]["messages"][sensor]
+                                 for sensor, result in captures.items()}} if captures else None}
 
     @router.get("/baseline")
     def baseline(user_id: Identifier, device_id: Identifier):

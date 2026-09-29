@@ -155,6 +155,23 @@ class SensorPersistenceTests(unittest.TestCase):
         self.capture("optical", "second")
         self.assertEqual(self.latest()["captures"]["optical"]["compared_baseline"]["reference_windows"], 2)
 
+    def test_historical_feedback_is_derived_without_rewriting_or_learning(self):
+        self.capture("optical", "first")
+        self.capture("optical", "second")
+        record = self.latest()["captures"]["optical"]
+        record["feedback"] = None
+        for key in ("finding", "message", "rule_reason_windows"):
+            record["summary"]["sensors"]["optical"].pop(key)
+        self.connection.db.execute("UPDATE real_sensor_events SET result_json=? WHERE session_id='second'", (json.dumps(record),))
+        self.connection.commit()
+        before = self.connection.db.execute("SELECT state_json FROM real_sensor_profiles").fetchone()[0]
+        latest = self.latest()
+        self.assertTrue(latest["summary"]["sensors"]["optical"]["message"])
+        self.assertEqual(latest["feedback"]["source"], "rules")
+        saved = self.connection.db.execute("SELECT result_json FROM real_sensor_events WHERE session_id='second'").fetchone()[0]
+        self.assertEqual(json.loads(saved), record)
+        self.assertEqual(self.connection.db.execute("SELECT state_json FROM real_sensor_profiles").fetchone()[0], before)
+
     def test_calibration_api_invalid_capture_and_binding(self):
         url = "/real-sensors/optical/next-capture"
         body = {**self.params, "role": "calibration"}
