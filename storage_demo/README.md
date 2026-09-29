@@ -2,6 +2,9 @@
 
 신규 DB는 `setup.sql`을 실행합니다. 기존 테이블은 `CREATE TABLE IF NOT EXISTS`로 변경되지 않습니다.
 
+실제 사용자 센서의 누적 baseline과 대시보드 연결은 [실사용 baseline 안내](REAL_BASELINE_LIVE.md)를 참고하세요.
+기존 설치에는 `migration_real_baseline.sql`을 추가 적용해야 합니다. 기존 테스트 데이터는 새 baseline으로 가져오지 않습니다.
+
 기존 DB 변경 순서:
 1. `sensor_readings`를 백업하고 API 및 모든 쓰기 작업을 중단합니다.
 2. MySQL Workbench에서 관리자 계정으로 `migrate_boot_id_v1.sql` 전체를 한 번 실행합니다.
