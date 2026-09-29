@@ -61,6 +61,111 @@ def get_session_image():
         st.error(f"측정 세션의 이미지를 가져오지 못했습니다: {e}")
         return None
 
+    # 가장 최근에 생성/수정된 이미지
+    latest_image = max(
+        image_files,
+        key=os.path.getmtime,
+    )
+
+    return latest_image
+
+def get_image_history():
+    try:
+        response = requests.get(
+            f"{API_BASE_URL}/ai/history/{USER_ID}",
+            params={"limit": 30},
+            timeout=10,
+        )
+
+        response.raise_for_status()
+
+        return response.json().get("items", [])
+
+    except requests.RequestException as e:
+        st.error(f"두피 이미지 이력을 불러오지 못했습니다: {e}")
+        return []
+
+def calculate_image_baseline(history):
+    if not history:
+        return {}
+
+    grade_fields = {
+        "미세각질": "micro_scale_grade",
+        "피지과다": "excess_sebum_grade",
+        "모낭사이홍반": "perifollicular_erythema_grade",
+        "모낭홍반/농포": "follicular_erythema_pustule_grade",
+        "비듬": "dandruff_grade",
+        "탈모": "hair_loss_grade",
+    }
+
+    baseline = {}
+
+    for label, field in grade_fields.items():
+        values = [
+            row[field]
+            for row in history
+            if row.get(field) is not None
+        ]
+
+        if values:
+            baseline[label] = sum(values) / len(values)
+
+    return baseline
+
+def show_image_history_graph(history):
+    if not history:
+        st.info("아직 두피 이미지 측정 기록이 없습니다.")
+        return
+
+    df = pd.DataFrame(history)
+
+    df["measured_at"] = pd.to_datetime(
+        df["measured_at"]
+    )
+
+    grade_fields = {
+        "미세각질": "micro_scale_grade",
+        "피지과다": "excess_sebum_grade",
+        "모낭사이홍반": "perifollicular_erythema_grade",
+        "모낭홍반/농포": "follicular_erythema_pustule_grade",
+        "비듬": "dandruff_grade",
+        "탈모": "hair_loss_grade",
+    }
+
+    selected_label = st.selectbox(
+        "두피 상태",
+        list(grade_fields.keys()),
+    )
+
+    selected_field = grade_fields[selected_label]
+
+    baseline = df[selected_field].mean()
+
+    graph_df = df[
+        ["measured_at", selected_field]
+    ].copy()
+
+    graph_df = graph_df.dropna()
+
+    graph_df = graph_df.rename(
+        columns={
+            selected_field: "severity"
+        }
+    )
+
+    graph_df["baseline"] = baseline
+
+    st.line_chart(
+        graph_df.set_index("measured_at")[
+            ["severity", "baseline"]
+        ]
+    )
+
+    st.caption(
+        f"{selected_label} 개인 평균: {baseline:.2f} "
+        f"(0=양호, 1=경증, 2=중등도, 3=중증)"
+    )
+
 plt.rcParams["font.family"] = "Malgun Gothic"
 plt.rcParams["axes.unicode_minus"] = False 
 
@@ -664,6 +769,9 @@ else:
             "양호 0 · 경증 1 · 중등도 2 · 중증 3"
         )"""
 
+        st.subheader("📊 나의 두피 상태 변화")
+        image_history = get_image_history()
+        show_image_history_graph(image_history)
 
         st.divider()
 
