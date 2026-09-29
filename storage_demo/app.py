@@ -18,6 +18,7 @@ from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, ValidationError
 from ai.hair_model import load_model, predict
 from sensor_analysis_api import router as sensor_analysis_router
 from sensor_pipeline_api import make_router, session_lock, require_receiving
+from real_sensor_service import make_real_sensor_router
 from real_capture_storage import (OpticalCapture, GyroCapture, normalize_wire,
                                   store_real_capture, analyze_stored_image)
 
@@ -126,6 +127,7 @@ def database():
 
 
 app.include_router(make_router(database))
+app.include_router(make_real_sensor_router(database))
 
 
 # ---------------------------------------------------------

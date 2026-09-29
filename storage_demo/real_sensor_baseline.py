@@ -6,6 +6,7 @@ Isolation Forest is deterministically reconstructed from that state on each upda
 import copy
 
 import numpy as np
+import sklearn
 
 from analyze_by_sensor import fit_sensor
 from analyze_real_sessions import CHANNELS, features
@@ -43,6 +44,7 @@ def build_baseline(state, sensor):
     rule_threshold = float(np.quantile(deviation(reference, means, stds), .95, method="higher"))
     baseline = {
         "version": state["version"], "sensor": sensor, "is_synthetic": False,
+        "sklearn_version": sklearn.__version__, "model_parameters": model.get_params(),
         "feature_order": keys, "feature_mean": dict(zip(keys, means.tolist())),
         "feature_std": dict(zip(keys, stds.tolist())), "reference_windows": len(train),
         "train_sessions": [s["identity"] for s in state["train"]],
@@ -70,7 +72,8 @@ def advance(previous, rows, meta, sensor, role="measurement"):
             raise ValueError("Session already admitted")
     model, baseline = build_baseline(state, sensor)
     result = {"pipeline_version": VERSION, "mode": "real_online_analysis", "is_synthetic": False,
-              "sensor": sensor, "metadata": meta, "role": role, "quality": quality,
+              "sensor": sensor, "metadata": {k: v for k, v in meta.items() if k != "wire_payload"},
+              "role": role, "quality": quality,
               "features": extracted, "scores": [], "compared_baseline": baseline,
               "feedback": None, "limitations": [
                   "Anomaly scores are relative differences, not health probabilities",

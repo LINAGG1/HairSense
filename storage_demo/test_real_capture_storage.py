@@ -56,7 +56,10 @@ class CaptureStorageTests(unittest.TestCase):
 
     def connection(self, replies):
         cursor = Mock()
-        cursor.fetchone.side_effect = replies
+        cursor.fetchone.side_effect = [*replies, {
+            "state_json": json.dumps({"version": 0, "train": [], "calibration": [], "baseline": None}),
+            "next_role": "measurement",
+        }]
         connection = Mock()
         context = Mock()
         context.__enter__ = Mock(return_value=cursor)
@@ -167,7 +170,9 @@ class CaptureStorageTests(unittest.TestCase):
         self.assertEqual(result["image_status"], "not_present")
         self.assertFalse(any("sensor_capture_images" in c.args[0] for c in cursor.execute.call_args_list))
         analysis_insert = next(c for c in cursor.execute.call_args_list if c.args[0].startswith("INSERT INTO sensor_analysis_runs"))
-        self.assertEqual(json.loads(analysis_insert.args[1][-1])["windows"][0]["features"]["gyro_x"]["null_count"], 1)
+        stored_analysis = json.loads(analysis_insert.args[1][-1])
+        self.assertEqual(stored_analysis["status"], "insufficient_data")
+        self.assertIn("invalid_or_missing_gyro_x", stored_analysis["quality"]["windows"][0]["reasons"])
         for value in (digest, "different"):
             connection, cursor, database, lock = self.connection([])
             with patch.object(storage, "session_lock", lock), patch.object(storage, "register_session", return_value={

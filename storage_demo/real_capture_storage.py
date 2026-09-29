@@ -15,6 +15,7 @@ from pydantic import BaseModel, ConfigDict, Field, FiniteFloat, model_validator
 
 from sensor_pipeline import json_text
 from sensor_pipeline_api import Identifier, WHERE, decode, register_session, session_lock
+from real_sensor_service import record_capture
 
 
 class WireModel(BaseModel):
@@ -195,7 +196,7 @@ def validate_capture(meta, readings, image_bytes, reading_type):
 
 
 def store_real_capture(database, meta, readings, image_bytes, reading_type):
-    """Atomically persist image BLOB + real sensor rows. No inference side effects.
+    """Atomically persist raw capture and chronological real sensor learning.
 
 Caller supplies the existing Reading class. Unmeasured channels remain null.
 """
@@ -207,7 +208,6 @@ Caller supplies the existing Reading class. Unmeasured channels remain null.
               "device_id": metadata["device_id"], "user_id": metadata["user_id"],
               "image_status": "pending" if image_bytes else "not_present",
               "sensor_analysis_status": "awaiting_real_baseline"}
-    descriptive = describe_real_rows(metadata, rows)
     with database() as connection, session_lock(connection, key):
         try:
             with connection.cursor(dictionary=True) as cursor:
@@ -222,6 +222,10 @@ Caller supplies the existing Reading class. Unmeasured channels remain null.
                 if old:
                     if old["payload_sha256"] != payload_hash:
                         raise HTTPException(409, "capture_payload_conflict")
+                    cursor.execute("SELECT result_json FROM real_sensor_events WHERE " + WHERE, key)
+                    sensor_event = cursor.fetchone()
+                    saved_sensor = decode(sensor_event.get("result_json")) if sensor_event else None
+                    result["sensor_analysis_status"] = (saved_sensor or {}).get("status", "excluded_historical_capture")
                     connection.rollback()
                     return {**result, "cached": True, "image_status": old["image_status"],
                             "image_result": decode(old["image_result_json"])}
@@ -240,10 +244,12 @@ Caller supplies the existing Reading class. Unmeasured channels remain null.
                     cursor.execute("INSERT INTO sensor_capture_images "
                                "(device_id,session_id,boot_id,payload_sha256,image_sha256,image_mime,image_bytes) "
                                "VALUES (%s,%s,%s,%s,%s,%s,%s)", (*key, payload_hash, image_hash, mime, image_bytes))
+                sensor_result = record_capture(cursor, metadata, rows)
+                result["sensor_analysis_status"] = sensor_result["status"]
                 cursor.execute("INSERT INTO sensor_analysis_runs "
                                "(device_id,session_id,boot_id,pipeline_version,status,result_json) "
                                "VALUES (%s,%s,%s,%s,%s,%s)",
-                               (*key, "real_capture_1", "awaiting_real_baseline", json_text(descriptive)))
+                               (*key, sensor_result["pipeline_version"], sensor_result["status"], json_text(sensor_result)))
                 cursor.execute("UPDATE sensor_sessions SET status='sealed',metadata_json=%s WHERE " + WHERE,
                                (json_text({**metadata, "payload_sha256": payload_hash}), *key))
             connection.commit()
