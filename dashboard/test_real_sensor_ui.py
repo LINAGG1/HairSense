@@ -47,7 +47,14 @@ class SensorUITests(unittest.TestCase):
             button.click().run(timeout=30)
             self.assertFalse(app.exception)
             self.assertTrue(app.session_state["measurement_done"])
-            self.assertEqual(len(app.metric), 2)
+            self.assertEqual(len(app.metric), 0)
+            self.assertEqual(len(app.dataframe), 0)
+            self.assertEqual(len(app.json), 0)
+            self.assertEqual(len(app.code), 0)
+            self.assertNotIn("센서 분석 상세", [e.label for e in app.expander])
+            self.assertNotIn("센서 기준 조정 세션", [e.label for e in app.expander])
+            self.assertNotIn("📊 촬영 당시 센서 상태", [e.value for e in app.subheader])
+            self.assertFalse(any('st.subheader' in e.value for e in app.markdown))
             self.assertIn("광학 센서 분석 결과", [m.value for m in app.markdown])
             self.assertIn("자이로 센서 분석 결과", [m.value for m in app.markdown])
             self.assertIn("이번 측정에서 수신된 이미지가 없습니다.", [m.value for m in app.info])
@@ -93,17 +100,15 @@ class SensorUITests(unittest.TestCase):
                     elif mode == "timeout":
                         self.assertIn("이미지를 불러오지 못했습니다. 센서 결과는 확인할 수 있습니다.", [m.value for m in app.info])
                     elif mode == "gyro_only":
-                        self.assertEqual(len(app.metric), 1)
+                        self.assertEqual(len(app.metric), 0)
 
-    def test_calibration_button_targets_selected_sensor(self):
+    def test_calibration_controls_are_absent(self):
         with patch.dict(os.environ, API_BASE_URL="http://sensor-test.invalid"), patch("requests.post") as post:
-            post.return_value.status_code = 200
             app = AppTest.from_file(str(Path(__file__).with_name("app.py"))).run(timeout=30)
-            app.selectbox[0].select("gyro").run(timeout=30)
-            next(b for b in app.button if b.label == "다음 센서 측정에 적용").click().run(timeout=30)
             self.assertFalse(app.exception)
-            self.assertTrue(post.call_args.args[0].endswith("/real-sensors/gyro/next-capture"))
-            self.assertEqual(post.call_args.kwargs["json"]["role"], "calibration")
+            self.assertNotIn("센서 기준 조정 세션", [e.label for e in app.expander])
+            self.assertNotIn("다음 센서 측정에 적용", [b.label for b in app.button])
+            post.assert_not_called()
 
 
 if __name__ == "__main__":

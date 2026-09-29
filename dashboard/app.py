@@ -4,7 +4,7 @@ import matplotlib.pyplot as plt
 import requests
 import os
 from dotenv import load_dotenv
-from real_sensor_ui import fetch_snapshot, render_sensor, calibration_controls
+from real_sensor_ui import fetch_snapshot, render_sensor
 
 load_dotenv()
 
@@ -548,34 +548,7 @@ else:
 
     with right_col:
 
-        """st.subheader(
-            "📊 촬영 당시 센서 상태"
-        )
 
-        sensor_col1, sensor_col2 = st.columns(2)
-
-        with sensor_col1:
-
-            optical_diff = (
-                sensor_snapshot["광학 반사"]
-                - sensor_baseline["광학 반사"]
-            )
-
-            st.metric(
-                "광학 반사",
-                sensor_snapshot["광학 반사"],
-                f"+{optical_diff}",
-            )
-
-
-        with sensor_col2:
-
-            st.metric(
-                "빗질 움직임",
-                sensor_snapshot["빗질 움직임"],
-            )"""
-
-        st.subheader("📊 촬영 당시 센서 상태")
 
         render_sensor(st.session_state.get("real_sensor_snapshot"), "optical")
         render_sensor(st.session_state.get("real_sensor_snapshot"), "gyro")
@@ -586,124 +559,6 @@ else:
         # 평소와 비교 - 막대그래프
         # ====================================================
 
-        """st.subheader(
-            "🧠 평소와 비교"
-        )
-
-        categories = list(today_result.keys())
-
-        previous_values = [
-            previous_result[name]
-            for name in categories
-        ]
-
-        today_values = [
-            today_result[name]
-            for name in categories
-        ]
-
-        x = list(range(len(categories)))
-        width = 0.34
-
-        fig, ax = plt.subplots(
-            figsize=(10, 5.5)
-        )
-
-        # 평소
-        ax.bar(
-            [i - width / 2 for i in x],
-            previous_values,
-            width=width,
-            label="평소",
-            color="#F0EEB8",
-            edgecolor="none",
-            zorder=3,
-        )
-
-        # 오늘
-        ax.bar(
-            [i + width / 2 for i in x],
-            today_values,
-            width=width,
-            label="오늘",
-            color="#99F9A1",
-            edgecolor="none",
-            zorder=3,
-        )
-
-        # X축
-        ax.set_xticks(x)
-
-        ax.set_xticklabels(
-            categories,
-            fontsize=11,
-        )
-
-        # Y축
-        ax.set_yticks(
-            [0, 1, 2, 3]
-        )
-
-        ax.set_yticklabels(
-            [
-                "양호",
-                "경증",
-                "중등도",
-                "중증",
-            ],
-            fontsize=11,
-        )
-
-        ax.set_ylim(
-            0,
-            3.4,
-        )
-
-        # 축 제목
-        ax.set_xlabel(
-            "두피 상태 항목",
-            fontsize=12,
-            labelpad=10,
-        )
-
-        ax.set_ylabel(
-            "상태",
-            fontsize=12,
-            labelpad=10,
-        )
-
-        # 제목/테두리 정리
-        ax.spines["top"].set_visible(False)
-        ax.spines["right"].set_visible(False)
-
-        # 격자
-        ax.grid(
-            axis="y",
-            alpha=0.18,
-            linewidth=0.8,
-            zorder=0,
-        )
-
-        # 범례
-        ax.legend(
-            loc="upper right",
-            frameon=False,
-            fontsize=11,
-        )
-
-        # 여백
-        plt.tight_layout()
-
-        st.pyplot(
-            fig,
-            use_container_width=True,
-        )
-
-        plt.close(fig)
-
-        st.caption(
-            "양호 0 · 경증 1 · 중등도 2 · 중증 3"
-        )"""
 
         st.subheader("📊 나의 두피 상태 변화")
         image_history = get_image_history()
@@ -716,23 +571,6 @@ else:
         # 오늘의 안내
         # ====================================================
 
-        """st.subheader(
-            "💡 오늘의 안내"
-        )
-
-        for title, message in gemini_feedback:
-
-            with st.container(
-                border=True
-            ):
-
-                st.write(
-                    f"**{title}**"
-                )
-
-                st.write(
-                    message
-                )"""
         st.subheader("💡 오늘의 안내")
 
         feedback = analysis_result.get("feedback")
@@ -767,6 +605,3 @@ else:
                 st.success("센서 분석 완료")
             else:
                 st.info("센서별 수집·분석 상태를 확인해 주세요.")
-
-
-calibration_controls(API_BASE_URL, SENSOR_USER_ID, SENSOR_DEVICE_ID)
