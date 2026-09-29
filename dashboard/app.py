@@ -4,6 +4,7 @@ import matplotlib.pyplot as plt
 import requests
 import os
 from dotenv import load_dotenv
+from real_sensor_ui import fetch_snapshot, render_sensor, calibration_controls
 
 load_dotenv()
 
@@ -17,30 +18,11 @@ SESSION_ID = os.getenv("SESSION_ID", "test-session-001")
 DEVICE_ID = os.getenv("DEVICE_ID", "hairsense-001")
 BOOT_ID = os.getenv("BOOT_ID", "boot-001")
 USER_ID = os.getenv("USER_ID", "user-001")
+SENSOR_USER_ID = os.getenv("HAIRSENSE_REAL_USER_ID", USER_ID)
+SENSOR_DEVICE_ID = os.getenv("HAIRSENSE_REAL_DEVICE_ID", DEVICE_ID)
 
 def get_analysis_result():
-    url = f"{API_BASE_URL}/sensor-sessions/{SESSION_ID}/analysis"
-
-    params = {
-        "device_id": DEVICE_ID,
-        "boot_id": BOOT_ID,
-        "user_id": USER_ID,
-    }
-
-    try:
-        response = requests.get(
-            url,
-            params=params,
-            timeout=10,
-        )
-
-        response.raise_for_status()
-
-        return response.json()
-
-    except requests.exceptions.RequestException as e:
-        st.error(f"분석 결과를 가져오지 못했습니다: {e}")
-        return None
+    return fetch_snapshot(API_BASE_URL, SENSOR_USER_ID, SENSOR_DEVICE_ID)
     
 def get_session_image():
     """Fetch the DB image belonging to the same session as the analysis."""
@@ -427,6 +409,8 @@ if not st.session_state.measurement_done:
 
             # 서버에서 센서 분석 결과 가져오기
             result = get_analysis_result()
+            # Preserve the clicked sensor snapshot independently of image availability.
+            st.session_state.real_sensor_snapshot = result
 
             # 분석 결과와 동일한 세션의 DB 이미지 조회
             image_bytes = get_session_image() if result is not None else None
@@ -615,34 +599,8 @@ else:
 
         st.subheader("📊 촬영 당시 센서 상태")
 
-        optical_data = (
-            analysis_result
-            .get("summary", {})
-            .get("sensors", {})
-            .get("optical", {})
-        )
-
-        st.write("광학 센서 분석 결과")
-
-        if optical_data:
-            st.json(optical_data)
-        else:
-            st.info("광학 센서 분석 결과가 없습니다.")
-
-
-        gyro_data = (
-            analysis_result
-            .get("summary", {})
-            .get("sensors", {})
-            .get("gyro", {})
-        )
-
-        st.write("자이로 센서 분석 결과")
-
-        if gyro_data:
-            st.json(gyro_data)
-        else:
-            st.info("자이로 센서 분석 결과가 없습니다.")
+        render_sensor(st.session_state.get("real_sensor_snapshot"), "optical")
+        render_sensor(st.session_state.get("real_sensor_snapshot"), "gyro")
 
         st.divider()
 
@@ -824,3 +782,17 @@ else:
 
         with status_col3:
             st.success("센서 분석 완료")
+
+
+# Sensor-only captures remain visible even when the existing image flow cannot open.
+if not st.session_state.measurement_done:
+    snapshot = st.session_state.get("real_sensor_snapshot")
+    if snapshot is not None:
+        st.subheader("📊 실제 센서 분석")
+        optical_column, gyro_column = st.columns(2)
+        with optical_column:
+            render_sensor(snapshot, "optical")
+        with gyro_column:
+            render_sensor(snapshot, "gyro")
+
+calibration_controls(API_BASE_URL, SENSOR_USER_ID, SENSOR_DEVICE_ID)
