@@ -6,6 +6,7 @@ from contextlib import contextmanager
 from typing import Annotated, Literal
 
 from fastapi import APIRouter, HTTPException
+from fastapi.responses import Response
 from pydantic import BaseModel, ConfigDict, Field
 
 from sensor_feedback import generate_feedback
@@ -226,5 +227,20 @@ def make_router(database):
             save_run(connection, key, result)
             return {"retry_id": request.retry_id, "cached": False, "status": attempt["status"],
                     "feedback": attempt.get("feedback"), "error_code": attempt.get("error_code")}
+
+    @router.get("/{session_id}/image")
+    def image(session_id: Identifier, device_id: Identifier, boot_id: Identifier, user_id: Identifier):
+        key = (device_id, session_id, boot_id)
+        with database() as connection, connection.cursor(dictionary=True) as cursor:
+            cursor.execute("SELECT user_id FROM sensor_sessions WHERE " + WHERE, key)
+            session = cursor.fetchone()
+            if not session or session["user_id"] != user_id:
+                raise HTTPException(404, "session_not_found")
+            cursor.execute("SELECT image_bytes,image_mime FROM sensor_capture_images WHERE " + WHERE, key)
+            capture = cursor.fetchone()
+            if not capture:
+                raise HTTPException(404, "image_not_found")
+            return Response(content=bytes(capture["image_bytes"]), media_type=capture["image_mime"],
+                            headers={"Cache-Control": "no-store", "X-Content-Type-Options": "nosniff"})
 
     return router
