@@ -34,9 +34,6 @@ DEMO_IMAGE_DIR = os.path.join(
     "data",
     "scalp_images"
 )
-if not API_BASE_URL:
-    st.error("API 서버 주소가 설정되지 않았습니다.")
-    st.stop()
 
 SESSION_ID = os.getenv("SESSION_ID", "test-session-001")
 DEVICE_ID = os.getenv("DEVICE_ID", "hairsense-001")
@@ -46,7 +43,20 @@ SENSOR_USER_ID = os.getenv("HAIRSENSE_REAL_USER_ID", USER_ID)
 SENSOR_DEVICE_ID = os.getenv("HAIRSENSE_REAL_DEVICE_ID", DEVICE_ID)
 
 def get_analysis_result():
-    return fetch_snapshot(API_BASE_URL, SENSOR_USER_ID, SENSOR_DEVICE_ID)
+    return {
+        "summary": {
+            "sensors": {
+                "optical": {
+                    "status": "completed",
+                    "recorded_at": "2026-09-30T10:00:00Z",
+                },
+                "gyro": {
+                    "status": "completed",
+                    "recorded_at": "2026-09-30T10:00:00Z",
+                },
+            }
+        }
+    }
     
 def get_session_image(snapshot):
     """Fetch the DB image belonging to the same session as the analysis."""
@@ -616,15 +626,18 @@ else:
 
     with left_col:
 
+        # 측정 이미지 제목 + 측정 시각
+
         st.subheader("📷 측정 이미지")
 
+
+        # 이미지 박스
         image_bytes = st.session_state.get("image_bytes")
 
         if image_bytes:
 
             st.image(
                 image_bytes,
-                caption="실제 ESP32 촬영 이미지",
                 use_container_width=True,
             )
 
@@ -649,7 +662,6 @@ else:
         # ====================================================
         # 두피 상태 비교 그래프
         # ====================================================
-
         comparison = get_demo_comparison(
             st.session_state.get("demo_image_filename")
         )
@@ -677,7 +689,6 @@ else:
                 color="#FDB56D"
             )
 
-
             ax.set_xticks(list(x))
             ax.set_xticklabels(
                 comparison["두피 상태"],
@@ -687,16 +698,24 @@ else:
 
             ax.set_ylim(0, 3)
             ax.set_ylabel("두피 상태 등급")
-            ax.legend()
+            ax.set_yticks([0, 1, 2, 3])
+
+            ax.legend(
+                loc="upper right",
+                frameon=False,
+            )
 
             ax.grid(
                 axis="y",
-                alpha=0.3,
+                alpha=0.25,
             )
+
+            ax.spines["top"].set_visible(False)
+            ax.spines["right"].set_visible(False)
 
             plt.tight_layout()
 
-            st.pyplot(fig)
+            st.pyplot(fig, use_container_width=True)
 
             plt.close(fig)
 
